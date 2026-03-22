@@ -1,6 +1,6 @@
 # Módulos e Funcionalidades – Sistema CUIDAR
 
-## 🧠 Visão Geral
+## Visão Geral
 
 O sistema CUIDAR será estruturado em módulos independentes, porém interligados, tendo como elemento central o **residente**.
 
