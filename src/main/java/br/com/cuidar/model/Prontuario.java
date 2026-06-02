@@ -94,31 +94,6 @@ public class Prontuario {
     // MÉTODOS
 
     /**
-     * Cria um novo prontuário para o residente.
-     */
-    public void criarProntuario() {
-    }
-
-    /**
-     * Atualiza as informações fixas do prontuário, como doenças crônicas,
-     * alergias e condições médicas relevantes.
-     */
-    public void atualizarInformacoesFixas() {
-    }
-
-    /**
-     * Visualiza os dados completos do prontuário do residente.
-     */
-    public void visualizarProntuario() {
-    }
-
-    /**
-     * Consulta e lista os prontuários cadastrados.
-     */
-    public void consultass() {
-    }
-
-    /**
      * Verifica se o residente possui alguma alergia registrada no prontuário.
      *
      * @return - true se houver alergias cadastradas, false caso contrário

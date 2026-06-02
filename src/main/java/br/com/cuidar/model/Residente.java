@@ -2,18 +2,21 @@ package br.com.cuidar.model;
 
 import java.time.LocalDate;
 import java.time.Period;
-/**
- * Representa um residente vinculado à ILPI.
- */
+
 public class Residente extends Pessoa {
 
 	private LocalDate dataEntradaInstituicao;
+	private String telefone;
 	private String observacoesGerais;
 
-	public Residente(String cpf, String nomeCompleto, LocalDate dataNascimento, String genero, Boolean ativo,
-			String observacoesGerais) {
+	public Residente() {
+	}
+
+	public Residente(String cpf, String nomeCompleto, LocalDate dataNascimento, String genero, boolean ativo,
+			String telefone, String observacoesGerais) {
 		super(cpf, nomeCompleto, dataNascimento, genero, ativo);
-		this.dataEntradaInstituicao = setDataEntradaInstituicao();
+		this.dataEntradaInstituicao = LocalDate.now();
+		this.telefone = telefone;
 		this.observacoesGerais = observacoesGerais;
 	}
 
@@ -21,8 +24,16 @@ public class Residente extends Pessoa {
 		return dataEntradaInstituicao;
 	}
 
-	public LocalDate setDataEntradaInstituicao() {
-		return LocalDate.now();
+	public void setDataEntradaInstituicao(LocalDate dataEntradaInstituicao) {
+		this.dataEntradaInstituicao = dataEntradaInstituicao;
+	}
+
+	public String getTelefone() {
+		return telefone;
+	}
+
+	public void setTelefone(String telefone) {
+		this.telefone = telefone;
 	}
 
 	public String getObservacoesGerais() {
@@ -42,26 +53,11 @@ public class Residente extends Pessoa {
 		int idade = Period.between(dataEntradaInstituicao, LocalDate.now()).getYears();
 		return idade;
 	}
-	/**
-	 * Edita os dados de um Residente
-	 */
-	public void editarResidente() {
-	}
-	/**
-	 * Visualiza os dados de um Residente
-	 */
-	public void visualizarDetalhes() {
-	}
-	/**
-	 * Lista os Residente.
-	 */
-	public void listaResidente() {
-	}
 
 	@Override
 	public String toString() {
-		return "Residente [dataEntradaInstituicao=" + dataEntradaInstituicao + ", observacoesGerais="
-				+ observacoesGerais + "]";
+		return "Residente [dataEntradaInstituicao=" + dataEntradaInstituicao + ", telefone=" + telefone
+				+ ", observacoesGerais=" + observacoesGerais + "]";
 	}
 	
 }

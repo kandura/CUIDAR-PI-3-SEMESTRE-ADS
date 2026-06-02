@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.time.Period;
 
 /**
- * É uma super classe para a criçao de uma nova pessoa.
+ * Classe padrão para a criação de pessoas.
  */
 public class Pessoa {
 	private final int IDADE_MIN = 18;
@@ -13,15 +13,17 @@ public class Pessoa {
 	private String cpf;
 	private String nomeCompleto;
 	private LocalDate dataNascimento;
-	private Boolean ativo;
+	private boolean ativo;
 	private String genero;
 
-	public Pessoa(String cpf, String nomeCompleto, LocalDate dataNascimento, String genero, Boolean ativo) {
+	public Pessoa() {
+	}
 
-		this.cpf = setCpf(cpf);
-		this.nomeCompleto = setNomeCompleto(nomeCompleto);
-		this.dataNascimento = setDataNascimento(dataNascimento);
-		this.genero = setGenero(genero);
+	public Pessoa(String cpf, String nomeCompleto, LocalDate dataNascimento, String genero, boolean ativo) {
+		setCpf(cpf);
+		setNomeCompleto(nomeCompleto);
+		setDataNascimento(dataNascimento);
+		setGenero(genero);
 		this.ativo = ativo;
 	}
 
@@ -29,40 +31,40 @@ public class Pessoa {
 		return cpf;
 	}
 
-	public String setCpf(String cpf) {
+	public void setCpf(String cpf) {
 		if (!validarCpf(cpf)) {
 			throw new IllegalArgumentException("CPF inválido: " + cpf);
 		}
-		return cpf;
+		this.cpf = cpf;
 	}
 
 	public String getNomeCompleto() {
 		return nomeCompleto;
 	}
 
-	public String setNomeCompleto(String nomeCompleto) {
+	public void setNomeCompleto(String nomeCompleto) {
 		if (!validaNome(nomeCompleto)) {
 			throw new IllegalArgumentException("Nome inválido: " + nomeCompleto);
 		}
-		return nomeCompleto;
+		this.nomeCompleto = nomeCompleto;
 	}
 
 	public LocalDate getDataNascimento() {
 		return dataNascimento;
 	}
 
-	public LocalDate setDataNascimento(LocalDate dataNascimento) {
+	public void setDataNascimento(LocalDate dataNascimento) {
 		if (!validarDataNascimento(dataNascimento, IDADE_MIN, IDADE_MAX)) {
-			throw new IllegalArgumentException("Data de Nascimento inválido: " + dataNascimento);
+			throw new IllegalArgumentException("Data de Nascimento inválida: " + dataNascimento);
 		}
-		return dataNascimento;
+		this.dataNascimento = dataNascimento;
 	}
 
-	public Boolean isAtivo() {
+	public boolean isAtivo() {
 		return ativo;
 	}
 
-	public void setAtivo(Boolean ativo) {
+	public void setAtivo(boolean ativo) {
 		this.ativo = ativo;
 	}
 
@@ -70,7 +72,7 @@ public class Pessoa {
 	 * Inativa uma pessoa.
 	 */
 	public void inativarPessoa() {
-		if (this.ativo == true) {
+		if (this.ativo) {
 			this.ativo = false;
 		}
 	}
@@ -79,7 +81,7 @@ public class Pessoa {
 	 * Ativa uma pessoa.
 	 */
 	public void ativarPessoa() {
-		if (this.ativo == false) {
+		if (!this.ativo) {
 			this.ativo = true;
 		}
 	}
@@ -91,7 +93,7 @@ public class Pessoa {
 	 * @param genero - paramentro passado com o genero escolhido
 	 * @return retorna true caso o genero esteja dentro dos aceitos pelo enum
 	 */
-	public static Boolean validarGenero(String genero) {
+	public static boolean validarGenero(String genero) {
 		boolean r = false;
 		for (Genero g : Genero.values()) {
 			if (g.name().equalsIgnoreCase(genero)) {
@@ -105,11 +107,11 @@ public class Pessoa {
 		return genero;
 	}
 
-	public String setGenero(String genero) {
+	public void setGenero(String genero) {
 		if (!validarGenero(genero)) {
-			throw new IllegalArgumentException("Genero inválido: " + dataNascimento);
+			throw new IllegalArgumentException("Genero inválido: " + genero);
 		}
-		return genero;
+		this.genero = genero;
 	}
 
 	/**
@@ -119,35 +121,33 @@ public class Pessoa {
 	 * @param cpf - String com o CPF a ser validado
 	 * @return - true se o CPF for válido, false caso contrário
 	 */
-	public Boolean validarCpf(String cpf) {
-		boolean r = true;
-
+	public boolean validarCpf(String cpf) {
 		// Verifica se há alguma coisa escrita no campo.
 		if (cpf == null)
-			r = false;
+			return false;
 
 		// Remove formatação: pontos e traço
 		cpf = cpf.replaceAll("[.\\-]", "").trim();
 
 		// Verifica se tem exatamente 11 dígitos numéricos
 		if (!cpf.matches("\\d{11}"))
-			r = false;
+			return false;
 
 		// Rejeita CPFs com todos os dígitos iguais (ex: 111.111.111-11)
 		if (cpf.chars().distinct().count() == 1)
-			r = false;
+			return false;
 
 		// Calcula e valida o 1º dígito verificador
 		int primeiroDigito = calcularDigito(cpf, 9);
 		if (primeiroDigito != Character.getNumericValue(cpf.charAt(9)))
-			r = false;
+			return false;
 
 		// Calcula e valida o 2º dígito verificador
 		int segundoDigito = calcularDigito(cpf, 10);
 		if (segundoDigito != Character.getNumericValue(cpf.charAt(10)))
-			r = false;
+			return false;
 
-		return r;
+		return true;
 	}
 
 	/**
@@ -176,17 +176,16 @@ public class Pessoa {
 	 * @param nome - Variavel passada para verificação
 	 * @return - true se o Nome for válido, false caso contrário
 	 */
-	public static Boolean validaNome(String nome) {
-		boolean r = true;
+	public static boolean validaNome(String nome) {
 		if (nome == null || nome.isEmpty()) {
-			r = false;
+			return false;
 		}
 		for (int i = 0; i < nome.length(); i++) {
 			if (Character.isDigit(nome.charAt(i))) {
-				r = false; // Encontrou um número, retorna false
+				return false; // Encontrou um número, retorna false
 			}
 		}
-		return r; // Percorreu tudo e não achou números
+		return true; // Percorreu tudo e não achou números
 	}
 
 	/**
@@ -199,48 +198,25 @@ public class Pessoa {
 	 * @return - retorna false caso esteja diferente da regra de negocio. True caso
 	 *         contrario.
 	 */
-	public static boolean validarDataNascimento(LocalDate data, int idadeMin, int idadeMax) {
-		boolean r = true;
-		if (data == null) {
-			r = false;
-		}
-		try {
-			// Não pode ser data futura
-			if (data.isAfter(LocalDate.now())) {
-				r = false;
-			}
-
-			// Calcula a idade em anos, se for menor que 18, não é possivel cadastro
-			int idade = Period.between(data, LocalDate.now()).getYears();
-			if (idade >= idadeMin && idade <= idadeMax) {
-				r = false;
-			}
-
-		} catch (Exception e) {
-			r = false;
+	public static boolean validarDataNascimento(LocalDate dataNascimento, int idadeMin, int idadeMax) {
+		if (dataNascimento == null) {
+			return false;
 		}
 
-		return r;
-	}
+		LocalDate hoje = LocalDate.now();
 
-	/**
-	 * Edita os dados de uma pessoa
-	 */
-	public void editarPessoa() {
+		// Não pode ser data futura
+		if (dataNascimento.isAfter(hoje)) {
+			return false;
+		}
 
-	}
+		// Calcula a idade em anos, se for menor que 18, não é possivel cadastro
+		int idade = Period.between(dataNascimento, hoje).getYears();
+		if (idade < idadeMin || idade > idadeMax) {
+			return false;
+		}
 
-	/**
-	 * Consulta um CPF no banco de dados.
-	 * 
-	 * @param cpf - CPF que passado pelo usuario que sera consultado no banco
-	 * @return - todos os dados atraves do CPF.
-	 */
-	public Pessoa buscarPorCpf(String cpf) {
-		return null;
-	}
-
-	public void visualizarDetalhes() {
+		return true;
 	}
 
 	@Override

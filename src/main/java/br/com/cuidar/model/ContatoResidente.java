@@ -90,30 +90,6 @@ public class ContatoResidente {
 
     // MÉTODOS
 
-    /**
-     * Cadastra um novo contato vinculado a um residente.
-     */
-    public void cadastrarContato() {
-    }
-
-    /**
-     * Atualiza os dados de um contato existente.
-     */
-    public void atualizarContato() {
-    }
-
-    /**
-     * Exclui o contato do residente.
-     */
-    public void excluiContato() {
-    }
-
-    /**
-     * Consulta e lista os contatos de um residente.
-     */
-    public void consultass() {
-    }
-
     @Override
     public String toString() {
         return "ContatoResidente{" +
