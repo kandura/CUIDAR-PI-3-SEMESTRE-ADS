@@ -1,0 +1,8 @@
+# Configuracao do banco de dados PostgreSQL
+# Copie este arquivo para application.properties e preencha com seus dados
+# Altere o db.host para o IP do servidor na rede local (ex: 192.168.1.100)
+db.host=localhost
+db.port=5432
+db.name=cuidar
+db.user=postgres
+db.password=SUA_SENHA_AQUI
