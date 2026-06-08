@@ -7,11 +7,11 @@
 
     <groupId>br.com.cuidar</groupId>
     <artifactId>cuidar</artifactId>
-    <version>2.1-SNAPSHOT</version>
+    <version>2.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>CUIDAR</name>
-    <description>Sistema de Cuidado Integrado para Residências de Idosos — Versão 2.1 (conexão com PostgreSQL)</description>
+    <description>Sistema de Cuidado Integrado para Residências de Idosos — Versão 2.2 (interfaces de repositório)</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

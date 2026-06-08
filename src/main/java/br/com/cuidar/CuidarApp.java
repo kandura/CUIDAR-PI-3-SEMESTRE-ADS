@@ -1,38 +1,59 @@
 package br.com.cuidar;
 
 import br.com.cuidar.config.ConnectionFactory;
+import br.com.cuidar.repository.AtividadeRepository;
+import br.com.cuidar.repository.CargoRepository;
+import br.com.cuidar.repository.FuncionarioRepository;
+import br.com.cuidar.repository.MedicamentoRepository;
+import br.com.cuidar.repository.MedicoRepository;
+import br.com.cuidar.repository.PessoaRepository;
+import br.com.cuidar.repository.ProntuarioRepository;
+import br.com.cuidar.repository.QuartoRepository;
+import br.com.cuidar.repository.RegistroClinicoRepository;
+import br.com.cuidar.repository.ResidenteRepository;
+import br.com.cuidar.repository.ResidenteResponsavelRepository;
+import br.com.cuidar.repository.ResponsavelRepository;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
 /**
  * Classe principal do sistema CUIDAR.
- * Versão 2.1 — adiciona a camada de configuração de banco de dados
- * (ConnectionFactory + application.properties + schema SQL).
- * O main tenta abrir uma conexão e exibe o resultado.
+ * Versão 2.2 — define o contrato de persistência: 12 interfaces de Repository
+ * (uma para cada entidade do domínio). Ainda não há implementação JDBC.
  */
 public class CuidarApp {
 
     public static void main(String[] args) {
         System.out.println("=== Sistema CUIDAR ===");
-        System.out.println("Versão 2.1 — Configuração de banco\n");
+        System.out.println("Versão 2.2 — Interfaces de Repository\n");
 
-        System.out.println("Tentando conectar ao PostgreSQL...");
+        Class<?>[] repos = {
+                PessoaRepository.class,
+                CargoRepository.class,
+                FuncionarioRepository.class,
+                MedicoRepository.class,
+                QuartoRepository.class,
+                ResidenteRepository.class,
+                ResponsavelRepository.class,
+                ResidenteResponsavelRepository.class,
+                ProntuarioRepository.class,
+                MedicamentoRepository.class,
+                RegistroClinicoRepository.class,
+                AtividadeRepository.class
+        };
+
+        System.out.println("Interfaces de Repository definidas: " + repos.length);
+        for (Class<?> repo : repos) {
+            System.out.println("  - " + repo.getSimpleName()
+                    + " (" + repo.getDeclaredMethods().length + " métodos)");
+        }
+
+        System.out.println("\nTestando conexão com PostgreSQL...");
         try (Connection conn = ConnectionFactory.getConnection()) {
-            DatabaseMetaData meta = conn.getMetaData();
-            System.out.println("Conexão OK!");
-            System.out.println("  Banco:   " + meta.getDatabaseProductName()
-                    + " " + meta.getDatabaseProductVersion());
-            System.out.println("  Driver:  " + meta.getDriverName()
-                    + " " + meta.getDriverVersion());
-            System.out.println("  URL:     " + meta.getURL());
-            System.out.println("  Usuário: " + meta.getUserName());
+            System.out.println("Conexão OK: " + conn.getMetaData().getURL());
         } catch (SQLException e) {
             System.err.println("Falha ao conectar: " + e.getMessage());
-            System.err.println("Verifique se o PostgreSQL está rodando e se "
-                    + "src/main/resources/application.properties está configurado "
-                    + "(copie application.properties.example).");
         }
     }
 }
