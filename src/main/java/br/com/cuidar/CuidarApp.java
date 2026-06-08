@@ -4,45 +4,64 @@ import br.com.cuidar.model.Cargo;
 import br.com.cuidar.model.Funcionario;
 import br.com.cuidar.model.Medico;
 import br.com.cuidar.model.Pessoa;
+import br.com.cuidar.model.Quarto;
+import br.com.cuidar.model.Residente;
+import br.com.cuidar.model.ResidenteResponsavel;
+import br.com.cuidar.model.Responsavel;
 
 import java.time.LocalDate;
 
 /**
  * Classe principal do sistema CUIDAR.
- * Nesta versão (1.1) o app apenas instancia os modelos básicos
- * (Pessoa, Cargo, Funcionario, Medico) e imprime no console para
- * demonstrar que as classes de domínio compilam e funcionam.
+ * Versão 1.2 — adiciona os modelos de moradia (Quarto, Residente, Responsavel,
+ * ResidenteResponsavel) sobre os modelos básicos já existentes em 1.1.
  */
 public class CuidarApp {
 
     public static void main(String[] args) {
         System.out.println("=== Sistema CUIDAR ===");
-        System.out.println("Versão 1.1 — Protótipo de modelos básicos\n");
+        System.out.println("Versão 1.2 — Modelos de moradia\n");
 
-        Cargo admin = new Cargo("Administrador", "Acesso total ao sistema");
-        admin.setId(1);
+        // Modelos da v1.1
+        Cargo cuidador = new Cargo("Cuidador", "Cuidado direto aos residentes");
+        cuidador.setId(2);
 
-        Pessoa p1 = new Pessoa("Maria Silva", "111.222.333-44", "Feminino",
-                LocalDate.of(1985, 5, 20));
-        p1.setId(1);
+        Pessoa pFunc = new Pessoa("Ana Pereira", "222.333.444-55", "Feminino",
+                LocalDate.of(1990, 8, 15));
+        pFunc.setId(10);
+        Funcionario func = new Funcionario(pFunc, cuidador, "ana.pereira", "secreta",
+                "Tarde", "(11) 97777-2222", "ana@cuidar.com",
+                "Av. Brasil", 200, "02020-000");
+        func.setId(5);
 
-        Funcionario f1 = new Funcionario(p1, admin, "maria.silva", "123456",
-                "Manhã", "(11) 99999-0000", "maria@cuidar.com",
-                "Rua das Flores", 100, "01010-000");
-        f1.setId(1);
+        // Modelos novos da v1.2
+        Quarto q101 = new Quarto(101, "Ocupado");
+        q101.setId(1);
 
-        Pessoa p2 = new Pessoa("Dr. João Souza", "555.666.777-88", "Masculino",
-                LocalDate.of(1970, 3, 10));
-        p2.setId(2);
+        Pessoa pResid = new Pessoa("José da Silva", "888.777.666-55", "Masculino",
+                LocalDate.of(1940, 1, 5));
+        pResid.setId(20);
 
-        Medico m1 = new Medico(p2, "CRM-12345", "Geriatria",
-                "(11) 98888-1111", "joao@medico.com");
-        m1.setId(1);
+        Residente residente = new Residente(pResid, q101, "Ativo",
+                "Necessita auxílio para locomoção.");
+        residente.setId(1);
 
-        System.out.println(p1);
-        System.out.println(p2);
-        System.out.println(admin);
-        System.out.println(f1);
-        System.out.println(m1);
+        Pessoa pResp = new Pessoa("Carlos da Silva", "999.000.111-22", "Masculino",
+                LocalDate.of(1972, 9, 25));
+        pResp.setId(21);
+
+        Responsavel responsavel = new Responsavel(pResp,
+                "(11) 96666-3333", "carlos@email.com",
+                "Rua das Acácias", 350, "Centro", "São Paulo", "SP", "03030-000");
+        responsavel.setId(1);
+
+        ResidenteResponsavel vinculo = new ResidenteResponsavel(residente, responsavel, "Filho");
+        vinculo.setId(1);
+
+        System.out.println(func);
+        System.out.println(q101);
+        System.out.println(residente);
+        System.out.println(responsavel);
+        System.out.println(vinculo);
     }
 }

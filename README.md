@@ -1,3 +1,36 @@
+# CUIDAR — Versão 1.2 (Modelos de moradia)
+
+Segunda versão. Adiciona os **modelos relacionados à moradia do residente** sobre a v1.1: agora temos `Quarto`, `Residente` (com FK para Pessoa e Quarto), `Responsavel` (com endereço próprio) e `ResidenteResponsavel` (associativa com parentesco).
+
+Ainda sem banco de dados, sem UI, sem repositórios — só os modelos compilando.
+
+## Mudanças desde a v1.1
+
+| Novo arquivo | O que representa |
+|---|---|
+| `model.Quarto` | Quarto da ILPI (número + status) |
+| `model.Residente` | Idoso residente (Pessoa + Quarto + status + obs_geral) |
+| `model.Responsavel` | Responsável legal (Pessoa + endereço completo + contato) |
+| `model.ResidenteResponsavel` | Vínculo Residente↔Responsavel + grau de parentesco |
+
+`CuidarApp` agora também instancia um residente, um responsável e o vínculo entre eles.
+
+## Como rodar
+
+```powershell
+$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
+javac -d out $files
+java -cp out br.com.cuidar.CuidarApp
+```
+
+Ou com Maven:
+
+```powershell
+mvn -q compile exec:java -Dexec.mainClass="br.com.cuidar.CuidarApp"
+```
+
+---
+
 # CUIDAR — Versão 1.1 (Protótipo de modelos básicos)
 
 Primeira versão do sistema CUIDAR. Apenas as **classes de domínio principais** (Pessoa, Cargo, Funcionario, Medico) com construtores, getters/setters e `toString`. Sem banco de dados, sem UI, sem repositórios — só os modelos compilando e sendo instanciados no `main`.
@@ -9,25 +42,6 @@ Primeira versão do sistema CUIDAR. Apenas as **classes de domínio principais**
 - `model.Funcionario` — composto por Pessoa + Cargo + login/senha + turno + endereço
 - `model.Medico` — composto por Pessoa + CRM + especialidade + contato
 - `CuidarApp` — `main` que instancia um funcionário e um médico e imprime no console
-
-## Como rodar
-
-### Opção A — javac/java direto
-
-```powershell
-# Compilar
-$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
-javac -d out $files
-
-# Rodar
-java -cp out br.com.cuidar.CuidarApp
-```
-
-### Opção B — Maven
-
-```powershell
-mvn -q compile exec:java -Dexec.mainClass="br.com.cuidar.CuidarApp"
-```
 
 ## Saída esperada
 
