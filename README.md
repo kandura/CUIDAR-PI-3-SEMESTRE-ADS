@@ -1,3 +1,63 @@
+# CUIDAR — Versão 2.3 (Repositórios JDBC: Pessoa, Cargo, Quarto)
+
+Sexta versão. Começa a **camada de persistência JDBC**: primeiras 3 implementações concretas dos repositórios, todas em `br.com.cuidar.repository.impl`. Cobrem as três entidades mais simples (sem FKs entre si): `Pessoa`, `Cargo` e `Quarto`.
+
+Padrão adotado em todas as impls:
+- `ConnectionFactory.getConnection()` no início, fechamento no `finally`
+- `PreparedStatement` com parâmetros (sem concatenação SQL)
+- `Statement.RETURN_GENERATED_KEYS` no `INSERT` para setar o ID gerado
+- método auxiliar privado `montarXxx(ResultSet)` para mapear linha → objeto
+- exceções `SQLException` são convertidas em `RuntimeException` com mensagem descritiva
+
+## Mudanças desde a v2.2
+
+| Nova classe | Implementa | Operações |
+|---|---|---|
+| `repository.impl.PessoaRepositoryImpl` | `PessoaRepository` | salvar, atualizar, buscarPorId, buscarPorCpf, listarTodos |
+| `repository.impl.CargoRepositoryImpl` | `CargoRepository` | salvar, atualizar, buscarPorId, listarTodos |
+| `repository.impl.QuartoRepositoryImpl` | `QuartoRepository` | salvar, atualizar, buscarPorId, listarTodos, listarPorStatus |
+
+O `CuidarApp` agora instancia as 3 implementações e **lista** cargos, quartos e pessoas existentes no banco (operações somente leitura para não alterar dados do grupo).
+
+## Como rodar
+
+```powershell
+$lib = "C:\caminho\para\lib\postgresql-42.7.3.jar"
+$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
+javac -d out -cp $lib $files
+Copy-Item src\main\resources\application.properties out\ -ErrorAction SilentlyContinue
+java -cp "out;$lib" br.com.cuidar.CuidarApp
+```
+
+---
+
+# CUIDAR — Versão 2.2 (Interfaces de Repository)
+
+Quinta versão. Define o **contrato de persistência** do sistema: 12 interfaces de Repository, uma para cada entidade do domínio. Cada interface declara apenas as assinaturas dos métodos de acesso a dados (salvar, atualizar, excluir, buscar, listar). A implementação JDBC virá a partir da v06.
+
+## Mudanças desde a v2.1
+
+12 novas interfaces em `br.com.cuidar.repository`:
+
+| Interface | Métodos principais |
+|---|---|
+| `PessoaRepository` | salvar, atualizar, buscarPorId, **buscarPorCpf**, listarTodos |
+| `CargoRepository` | salvar, atualizar, buscarPorId, listarTodos |
+| `FuncionarioRepository` | salvar, atualizar, buscarPorId, **buscarPorCpfPessoa**, **buscarPorLogin**, listarTodos |
+| `MedicoRepository` | salvar, atualizar, buscarPorId, **buscarPorCrm**, listarTodos |
+| `QuartoRepository` | salvar, atualizar, buscarPorId, listarTodos, **listarPorStatus** |
+| `ResidenteRepository` | salvar, atualizar, buscarPorId, **buscarPorCpfPessoa**, **buscarPorNomePessoa**, listarTodos |
+| `ResponsavelRepository` | salvar, atualizar, buscarPorId, listarTodos |
+| `ResidenteResponsavelRepository` | salvar, excluir, **listarPorResidente**, **listarPorResponsavel** |
+| `ProntuarioRepository` | salvar, atualizar, buscarPorId, **buscarPorResidente** |
+| `MedicamentoRepository` | salvar, atualizar, buscarPorId, listarTodos |
+| `RegistroClinicoRepository` | salvar, excluir, buscarPorId, **listarPorResidente**, **listarPorPeriodo** |
+| `AtividadeRepository` | salvar, atualizar, excluir, buscarPorId, listarTodos, **listarPorDiaSemana** |
+
+O `CuidarApp` lista todas as interfaces (via reflection), conta os métodos de cada uma e testa a conexão com o banco.
+
+---
+
 # CUIDAR — Versão 2.1 (Configuração de banco)
 
 Quarta versão. Adiciona a **camada de configuração de banco de dados**: dependência do driver JDBC do PostgreSQL no `pom.xml`, classe `ConnectionFactory` para centralizar a obtenção de conexões, arquivo `application.properties.example` para configuração local e o **schema SQL completo** (12 tabelas) em `resources/database/create_tables.sql`.
@@ -30,24 +90,6 @@ Ainda sem repositórios e sem UI. O `main` agora apenas tenta abrir uma conexão
    notepad src\main\resources\application.properties
    ```
    > O `application.properties` real **não** é versionado (ignorado pelo `.gitignore`).
-
-## Como rodar
-
-Sem Maven (com o driver baixado em `lib/postgresql-42.7.3.jar`):
-
-```powershell
-$lib = "C:\caminho\para\lib\postgresql-42.7.3.jar"
-$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
-javac -d out $files
-Copy-Item src\main\resources\application.properties out\ -ErrorAction SilentlyContinue
-java -cp "out;$lib" br.com.cuidar.CuidarApp
-```
-
-Com Maven:
-
-```powershell
-mvn -q compile exec:java -Dexec.mainClass="br.com.cuidar.CuidarApp"
-```
 
 ---
 
