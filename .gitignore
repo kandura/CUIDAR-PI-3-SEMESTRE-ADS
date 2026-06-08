@@ -1,1 +1,29 @@
-/bin/
+# Build / IDE
+out/
+target/
+build/
+bin/
+*.class
+
+# Libs externas (não versionar binários grandes)
+lib/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Configurações sensíveis (não usado nesta versão, mas previne acidentes futuros)
+src/main/resources/application.properties
