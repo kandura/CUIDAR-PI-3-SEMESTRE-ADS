@@ -1,3 +1,30 @@
+# CUIDAR — Versão 1.3 (Modelos clínicos)
+
+Terceira versão. Completa o conjunto dos **12 modelos de domínio** adicionando os modelos clínicos: `Prontuario` (1:1 com Residente), `Medicamento` (catálogo), `RegistroClinico` (evolução de saúde, com `Funcionario`, `Medico` e `Medicamento` opcionais) e `Atividade` (programação semanal com `hora_inicio` + `hora_termino`).
+
+Ainda sem banco, sem UI, sem repositórios — só os modelos compilando.
+
+## Mudanças desde a v1.2
+
+| Novo arquivo | O que representa |
+|---|---|
+| `model.Prontuario` | Prontuário clínico do residente (peso, altura, tipo sanguíneo, alergias, obs_geral) |
+| `model.Medicamento` | Catálogo de medicamentos (nome, fabricante, validade, quantidade em estoque, descrição) |
+| `model.RegistroClinico` | Registro de evolução clínica (residente, funcionário, medicamento, médico, tipo evento, intercorrência, data, dosagem) |
+| `model.Atividade` | Atividade da agenda semanal (nome, descrição, dia da semana, hora início, hora término) |
+
+`CuidarApp` agora instancia um prontuário, um medicamento, um registro clínico e uma atividade.
+
+## Como rodar
+
+```powershell
+$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
+javac -d out $files
+java -cp out br.com.cuidar.CuidarApp
+```
+
+---
+
 # CUIDAR — Versão 1.2 (Modelos de moradia)
 
 Segunda versão. Adiciona os **modelos relacionados à moradia do residente** sobre a v1.1: agora temos `Quarto`, `Residente` (com FK para Pessoa e Quarto), `Responsavel` (com endereço próprio) e `ResidenteResponsavel` (associativa com parentesco).
@@ -14,20 +41,6 @@ Ainda sem banco de dados, sem UI, sem repositórios — só os modelos compiland
 | `model.ResidenteResponsavel` | Vínculo Residente↔Responsavel + grau de parentesco |
 
 `CuidarApp` agora também instancia um residente, um responsável e o vínculo entre eles.
-
-## Como rodar
-
-```powershell
-$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
-javac -d out $files
-java -cp out br.com.cuidar.CuidarApp
-```
-
-Ou com Maven:
-
-```powershell
-mvn -q compile exec:java -Dexec.mainClass="br.com.cuidar.CuidarApp"
-```
 
 ---
 
@@ -55,7 +68,3 @@ Cargo{id=1, nomeCargo='Administrador'}
 Funcionario{id=1, pessoa=Pessoa{...}, cargo=Cargo{...}, login='maria.silva'}
 Dr. João Souza
 ```
-
-## Próxima versão
-
-`v02-pessoa-cargo-medico` (1.2) — adiciona os modelos de moradia: Quarto, Residente, Responsavel, ResidenteResponsavel.
