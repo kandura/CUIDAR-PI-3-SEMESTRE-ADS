@@ -1,5 +1,6 @@
 package br.com.cuidar;
 
+import br.com.cuidar.controller.*;
 import br.com.cuidar.model.Atividade;
 import br.com.cuidar.model.Funcionario;
 import br.com.cuidar.model.Medicamento;
@@ -13,20 +14,18 @@ import java.util.List;
 
 /**
  * Classe principal do sistema CUIDAR.
- * Versão 3.1 — introduz a camada de serviço (9 services) sobre os 12 repositórios.
- * Os services concentram a lógica de negócio (validação de CPF único, fluxo
- * pessoa+entidade no cadastro etc.). Ainda sem GUI: a {@code main} apenas
- * exercita os services consultando o banco real.
+ * Versão 3.2 — introduz a camada de controllers (7 fachadas finas) que orquestram
+ * os 9 services. É o terceiro andar do MVC, pronto para receber a GUI Swing
+ * a partir da v3.3.
  */
 public class CuidarApp {
 
     public static void main(String[] args) {
         System.out.println("=== Sistema CUIDAR ===");
-        System.out.println("Versão 3.1 — Camada de serviço (9 services)\n");
+        System.out.println("Versão 3.2 — Camada de controllers (7 controllers)\n");
 
+        // Repositórios
         PessoaRepository pessoaRepo = new PessoaRepositoryImpl();
-        CargoRepository cargoRepo = new CargoRepositoryImpl();
-        QuartoRepository quartoRepo = new QuartoRepositoryImpl();
         FuncionarioRepository funcRepo = new FuncionarioRepositoryImpl();
         MedicoRepository medicoRepo = new MedicoRepositoryImpl();
         ResidenteRepository resRepo = new ResidenteRepositoryImpl();
@@ -37,7 +36,7 @@ public class CuidarApp {
         RegistroClinicoRepository rcRepo = new RegistroClinicoRepositoryImpl();
         AtividadeRepository atvRepo = new AtividadeRepositoryImpl();
 
-        LoginService loginService = new LoginService(funcRepo);
+        // Services
         ResidenteService residenteService = new ResidenteService(resRepo, pessoaRepo);
         FuncionarioService funcionarioService = new FuncionarioService(funcRepo, pessoaRepo);
         MedicoService medicoService = new MedicoService(medicoRepo, pessoaRepo);
@@ -47,65 +46,57 @@ public class CuidarApp {
         ResponsavelService responsavelService = new ResponsavelService(respRepo, rrRepo, pessoaRepo);
         AtividadeService atividadeService = new AtividadeService(atvRepo);
 
-        // evita "variável não utilizada" e prova que tudo cabe no main em conjunto.
-        System.out.println("Services instanciados: " + 9 + " ("
-                + loginService.getClass().getSimpleName() + ", "
-                + residenteService.getClass().getSimpleName() + ", "
-                + funcionarioService.getClass().getSimpleName() + ", "
-                + medicoService.getClass().getSimpleName() + ", "
-                + medicamentoService.getClass().getSimpleName() + ", "
-                + prontuarioService.getClass().getSimpleName() + ", "
-                + rcService.getClass().getSimpleName() + ", "
-                + responsavelService.getClass().getSimpleName() + ", "
-                + atividadeService.getClass().getSimpleName() + ")");
-        System.out.println("Repositórios em uso: 12 (pessoa, cargo, quarto, funcionario, medico, "
-                + "residente, responsavel, residente_responsavel, prontuario, medicamento, "
-                + "registro_clinico, atividade) — refs: "
-                + pessoaRepo.getClass().getSimpleName() + "/"
-                + cargoRepo.getClass().getSimpleName() + "/"
-                + quartoRepo.getClass().getSimpleName());
+        // Controllers
+        ResidenteController residenteController = new ResidenteController(residenteService, responsavelService);
+        FuncionarioController funcionarioController = new FuncionarioController(funcionarioService);
+        MedicoController medicoController = new MedicoController(medicoService);
+        MedicamentoController medicamentoController = new MedicamentoController(medicamentoService);
+        ProntuarioController prontuarioController = new ProntuarioController(prontuarioService);
+        RegistroClinicoController rcController = new RegistroClinicoController(rcService);
+        AtividadeController atividadeController = new AtividadeController(atividadeService);
+
+        System.out.println("Controllers instanciados: 7 ("
+                + residenteController.getClass().getSimpleName() + ", "
+                + funcionarioController.getClass().getSimpleName() + ", "
+                + medicoController.getClass().getSimpleName() + ", "
+                + medicamentoController.getClass().getSimpleName() + ", "
+                + prontuarioController.getClass().getSimpleName() + ", "
+                + rcController.getClass().getSimpleName() + ", "
+                + atividadeController.getClass().getSimpleName() + ")\n");
 
         try {
-            List<Residente> residentes = residenteService.listarTodos();
-            System.out.println("\n[ResidenteService] listarTodos -> " + residentes.size() + " residente(s)");
+            List<Residente> residentes = residenteController.listarTodos();
+            System.out.println("[ResidenteController] listarTodos -> " + residentes.size());
 
-            List<Funcionario> funcs = funcionarioService.listarTodos();
-            System.out.println("[FuncionarioService] listarTodos -> " + funcs.size() + " funcionário(s)");
+            List<Funcionario> funcs = funcionarioController.listarTodos();
+            System.out.println("[FuncionarioController] listarTodos -> " + funcs.size());
 
-            List<Medico> medicos = medicoService.listarTodos();
-            System.out.println("[MedicoService] listarTodos -> " + medicos.size() + " médico(s)");
+            List<Medico> medicos = medicoController.listarTodos();
+            System.out.println("[MedicoController] listarTodos -> " + medicos.size());
 
-            List<Medicamento> medicamentos = medicamentoService.listarTodos();
-            System.out.println("[MedicamentoService] listarTodos -> " + medicamentos.size() + " medicamento(s)");
+            List<Medicamento> meds = medicamentoController.listarTodos();
+            System.out.println("[MedicamentoController] listarTodos -> " + meds.size());
 
-            List<Atividade> atividades = atividadeService.listarTodos();
-            System.out.println("[AtividadeService] listarTodos -> " + atividades.size() + " atividade(s)");
-
-            if (!funcs.isEmpty()) {
-                Funcionario primeiro = funcs.get(0);
-                Funcionario auth = loginService.autenticar(primeiro.getLogin(), primeiro.getSenha());
-                System.out.println("[LoginService] autenticar('" + primeiro.getLogin()
-                        + "', '<senha-cadastrada>') -> " + (auth != null ? "OK ("
-                        + auth.getPessoa().getNomeCompleto() + ")" : "FALHA"));
-                Funcionario authBad = loginService.autenticar(primeiro.getLogin(), "senha_errada_xyz");
-                System.out.println("[LoginService] autenticar(login, 'senha_errada_xyz') -> "
-                        + (authBad != null ? "OK" : "negado (esperado)"));
-            }
+            List<Atividade> atvs = atividadeController.listarTodos();
+            System.out.println("[AtividadeController] listarTodos -> " + atvs.size());
 
             if (!residentes.isEmpty()) {
                 Residente r = residentes.get(0);
-                System.out.println("[ProntuarioService] buscarPorResidente('"
-                        + r.getPessoa().getNomeCompleto() + "') -> "
-                        + (prontuarioService.buscarPorResidente(r) != null ? "encontrado" : "nenhum"));
-                System.out.println("[RCService] listarPorResidente('"
-                        + r.getPessoa().getNomeCompleto() + "') -> "
-                        + rcService.listarPorResidente(r).size() + " registro(s)");
-                System.out.println("[ResponsavelService] listarPorResidente('"
-                        + r.getPessoa().getNomeCompleto() + "') -> "
-                        + responsavelService.listarPorResidente(r).size() + " vínculo(s)");
+                System.out.println("\n--- Visão do residente '" + r.getPessoa().getNomeCompleto() + "' ---");
+                System.out.println("[ResidenteController] buscarPorCpf('" + r.getPessoa().getCpf() + "') -> "
+                        + (residenteController.buscarPorCpf(r.getPessoa().getCpf()) != null ? "encontrado" : "nulo"));
+                System.out.println("[ResidenteController] listarResponsaveis -> "
+                        + residenteController.listarResponsaveis(r).size() + " vínculo(s)");
+                System.out.println("[ProntuarioController] buscarPorResidente -> "
+                        + (prontuarioController.buscarPorResidente(r) != null ? "encontrado" : "nenhum"));
+                System.out.println("[RCController] listarPorResidente -> "
+                        + rcController.listarPorResidente(r).size() + " registro(s)");
             }
+
+            System.out.println("[AtividadeController] listarPorDia('Sexta') -> "
+                    + atividadeController.listarPorDia("Sexta").size());
         } catch (RuntimeException e) {
-            System.err.println("Falha ao exercitar services: " + e.getMessage());
+            System.err.println("Falha ao exercitar controllers: " + e.getMessage());
         }
     }
 }
