@@ -1,58 +1,80 @@
 package br.com.cuidar;
 
+import br.com.cuidar.model.Atividade;
+import br.com.cuidar.model.Medicamento;
+import br.com.cuidar.model.Prontuario;
+import br.com.cuidar.model.RegistroClinico;
 import br.com.cuidar.model.Residente;
-import br.com.cuidar.model.ResidenteResponsavel;
-import br.com.cuidar.model.Responsavel;
+import br.com.cuidar.repository.AtividadeRepository;
+import br.com.cuidar.repository.MedicamentoRepository;
+import br.com.cuidar.repository.ProntuarioRepository;
+import br.com.cuidar.repository.RegistroClinicoRepository;
 import br.com.cuidar.repository.ResidenteRepository;
-import br.com.cuidar.repository.ResidenteResponsavelRepository;
-import br.com.cuidar.repository.ResponsavelRepository;
+import br.com.cuidar.repository.impl.AtividadeRepositoryImpl;
+import br.com.cuidar.repository.impl.MedicamentoRepositoryImpl;
+import br.com.cuidar.repository.impl.ProntuarioRepositoryImpl;
+import br.com.cuidar.repository.impl.RegistroClinicoRepositoryImpl;
 import br.com.cuidar.repository.impl.ResidenteRepositoryImpl;
-import br.com.cuidar.repository.impl.ResidenteResponsavelRepositoryImpl;
-import br.com.cuidar.repository.impl.ResponsavelRepositoryImpl;
 
 import java.util.List;
 
 /**
  * Classe principal do sistema CUIDAR.
- * Versão 2.5 — adiciona as implementações JDBC de {@code ResidenteRepositoryImpl},
- * {@code ResponsavelRepositoryImpl} e {@code ResidenteResponsavelRepositoryImpl}
- * (associativa entre Residente e Responsavel com grau de parentesco).
+ * Versão 2.6 — fecha o conjunto de 12 implementações JDBC adicionando
+ * {@code ProntuarioRepositoryImpl}, {@code MedicamentoRepositoryImpl},
+ * {@code RegistroClinicoRepositoryImpl} e {@code AtividadeRepositoryImpl}.
  */
 public class CuidarApp {
 
     public static void main(String[] args) {
         System.out.println("=== Sistema CUIDAR ===");
-        System.out.println("Versão 2.5 — Repositórios JDBC: Residente, Responsavel, ResidenteResponsavel\n");
+        System.out.println("Versão 2.6 — Repositórios JDBC: Prontuario, Medicamento, RegistroClinico, Atividade\n");
 
         ResidenteRepository resRepo = new ResidenteRepositoryImpl();
-        ResponsavelRepository respRepo = new ResponsavelRepositoryImpl();
-        ResidenteResponsavelRepository rrRepo = new ResidenteResponsavelRepositoryImpl();
+        ProntuarioRepository pronRepo = new ProntuarioRepositoryImpl();
+        MedicamentoRepository medRepo = new MedicamentoRepositoryImpl();
+        RegistroClinicoRepository rcRepo = new RegistroClinicoRepositoryImpl();
+        AtividadeRepository atvRepo = new AtividadeRepositoryImpl();
 
         try {
+            List<Medicamento> medicamentos = medRepo.listarTodos();
+            System.out.println("Catálogo de medicamentos (" + medicamentos.size() + "):");
+            for (Medicamento m : medicamentos) {
+                System.out.println("  - " + m.getId() + " | " + m.getNome()
+                        + " (" + m.getFabricante() + ")"
+                        + " | qtd=" + m.getQuantidade()
+                        + " | val=" + m.getDataValidade());
+            }
+
+            List<Atividade> atividades = atvRepo.listarTodos();
+            System.out.println("\nAtividades cadastradas (" + atividades.size() + "):");
+            for (Atividade a : atividades) {
+                System.out.println("  - " + a.getDiaSemana() + " " + a.getHoraInicio()
+                        + "-" + a.getHoraTermino() + " | " + a.getNome());
+            }
+
             List<Residente> residentes = resRepo.listarTodos();
-            System.out.println("Residentes cadastrados (" + residentes.size() + "):");
-            for (Residente r : residentes) {
-                System.out.println("  - " + r.getId() + " | " + r.getPessoa().getNomeCompleto()
-                        + " | Quarto " + r.getQuarto().getNumero()
-                        + " | status=" + r.getStatus());
-            }
-
-            List<Responsavel> responsaveis = respRepo.listarTodos();
-            System.out.println("\nResponsáveis cadastrados (" + responsaveis.size() + "):");
-            for (Responsavel resp : responsaveis) {
-                System.out.println("  - " + resp.getId() + " | " + resp.getPessoa().getNomeCompleto()
-                        + " | " + resp.getCidade() + "/" + resp.getEstado()
-                        + " | tel=" + resp.getTelefone());
-            }
-
             if (!residentes.isEmpty()) {
                 Residente r = residentes.get(0);
-                List<ResidenteResponsavel> vinculos = rrRepo.listarPorResidente(r);
-                System.out.println("\nResponsáveis do residente '" + r.getPessoa().getNomeCompleto()
-                        + "' (" + vinculos.size() + "):");
-                for (ResidenteResponsavel v : vinculos) {
-                    System.out.println("  - " + v.getResponsavel().getPessoa().getNomeCompleto()
-                            + " (" + v.getParentesco() + ")");
+
+                Prontuario pron = pronRepo.buscarPorResidente(r);
+                System.out.println("\nProntuário de '" + r.getPessoa().getNomeCompleto() + "':");
+                if (pron == null) {
+                    System.out.println("  (sem prontuário cadastrado)");
+                } else {
+                    System.out.println("  peso=" + pron.getPeso() + " | altura=" + pron.getAltura()
+                            + " | tipo=" + pron.getTipoSanguineo()
+                            + " | alergias=" + pron.getAlergias());
+                }
+
+                List<RegistroClinico> registros = rcRepo.listarPorResidente(r);
+                System.out.println("\nRegistros clínicos de '" + r.getPessoa().getNomeCompleto()
+                        + "' (" + registros.size() + "):");
+                for (RegistroClinico rc : registros) {
+                    System.out.println("  - " + rc.getDataRegistro() + " | " + rc.getTipoEvento()
+                            + " | med=" + rc.getMedicamento().getNome()
+                            + " | dose=" + rc.getDosagem()
+                            + " | func=" + rc.getFuncionario().getPessoa().getNomeCompleto());
                 }
             }
         } catch (RuntimeException e) {

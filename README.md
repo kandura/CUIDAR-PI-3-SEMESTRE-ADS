@@ -1,3 +1,32 @@
+# CUIDAR — Versão 2.6 (Repositórios JDBC: Prontuario, Medicamento, RegistroClinico, Atividade)
+
+Nona versão. Fecha o conjunto das **12 implementações JDBC** adicionando as últimas quatro: o prontuário (1:1 com residente), o catálogo de medicamentos, o registro clínico (evento que cruza residente + funcionário + medicamento + médico opcional) e o catálogo de atividades.
+
+## Mudanças desde a v2.5
+
+| Nova classe | Implementa | Particularidade |
+|---|---|---|
+| `repository.impl.ProntuarioRepositoryImpl` | `ProntuarioRepository` | JOIN em `residente` + `pessoa` + `quarto`; `buscarPorResidente` (1:1); alias `pron_obs` vs `res_obs` para não colidir |
+| `repository.impl.MedicamentoRepositoryImpl` | `MedicamentoRepository` | Tabela simples (CATÁLOGO, sem `id_residente`); coluna `quantidade` faz parte do INSERT/UPDATE |
+| `repository.impl.RegistroClinicoRepositoryImpl` | `RegistroClinicoRepository` | SQL gigante com 7 JOINs e aliases por entidade (`pres`/`pfunc`/`pmed`); `id_medico` é opcional (`LEFT JOIN` + `setNull(Types.INTEGER)` na inserção); `listarPorPeriodo(LocalDate, LocalDate)` para filtros de relatório |
+| `repository.impl.AtividadeRepositoryImpl` | `AtividadeRepository` | Tabela simples com `hora_inicio` + `hora_termino` (LocalTime ↔ `Time.valueOf`); `listarPorDiaSemana(String)` |
+
+Com isso o sistema fica com todas as 12 entidades persistidas. A pasta `repository.impl` chega ao total de 12 classes (Pessoa, Cargo, Quarto, Funcionario, Medico, Residente, Responsavel, ResidenteResponsavel, Prontuario, Medicamento, RegistroClinico, Atividade).
+
+O `CuidarApp` agora imprime o catálogo de medicamentos, a agenda de atividades, e — para o primeiro residente da lista — o prontuário e os registros clínicos em ordem decrescente de data.
+
+## Como rodar
+
+```powershell
+$lib = "C:\caminho\para\lib\postgresql-42.7.3.jar"
+$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
+javac -d out -cp $lib $files
+Copy-Item src\main\resources\application.properties out\ -ErrorAction SilentlyContinue
+java -cp "out;$lib" br.com.cuidar.CuidarApp
+```
+
+---
+
 # CUIDAR — Versão 2.5 (Repositórios JDBC: Residente, Responsavel, ResidenteResponsavel)
 
 Oitava versão. Adiciona três implementações JDBC, completando o trio de entidades que modelam o **lado humano da residência** (idoso + responsáveis legais) e a sua **associação N–N** com grau de parentesco.
@@ -13,16 +42,6 @@ Oitava versão. Adiciona três implementações JDBC, completando o trio de enti
 Os SELECTs do `ResidenteResponsavelRepositoryImpl` precisam de **aliases diferentes para colunas homônimas** porque tanto `pessoa` do residente quanto `pessoa` do responsável trazem `nome_completo`, `cpf`, etc., e tanto `residente.status` quanto `quarto.status` viriam como `status`. Sem aliases, o `ResultSet` resolveria pela última coluna lida, corrompendo o objeto.
 
 O `CuidarApp` agora lista os residentes (com quarto e status), os responsáveis (com cidade/UF e telefone) e os responsáveis vinculados ao primeiro residente da lista (com parentesco).
-
-## Como rodar
-
-```powershell
-$lib = "C:\caminho\para\lib\postgresql-42.7.3.jar"
-$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
-javac -d out -cp $lib $files
-Copy-Item src\main\resources\application.properties out\ -ErrorAction SilentlyContinue
-java -cp "out;$lib" br.com.cuidar.CuidarApp
-```
 
 ---
 
