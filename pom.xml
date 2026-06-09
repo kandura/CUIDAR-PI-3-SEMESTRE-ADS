@@ -1,38 +1,57 @@
-package br.com.cuidar.controller;
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-import br.com.cuidar.model.Atividade;
-import br.com.cuidar.service.AtividadeService;
-import java.util.List;
+    <groupId>br.com.cuidar</groupId>
+    <artifactId>cuidar</artifactId>
+    <version>3.2-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
-/**
- * Controller responsável por receber as requisições da tela de Atividades
- * e delegar para a camada de serviço.
- */
-public class AtividadeController {
+    <name>CUIDAR</name>
+    <description>Sistema de Cuidado Integrado para Residências de Idosos — Versão 3.2 (camada de controllers: 7 controllers)</description>
 
-    private final AtividadeService atividadeService;
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+    </properties>
 
-    public AtividadeController(AtividadeService atividadeService) {
-        this.atividadeService = atividadeService;
-    }
+    <dependencies>
+        <!-- Driver JDBC do PostgreSQL -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.3</version>
+        </dependency>
+    </dependencies>
 
-    public void cadastrarAtividade(Atividade atividade) {
-        atividadeService.cadastrarAtividade(atividade);
-    }
-
-    public void atualizarAtividade(Atividade atividade) {
-        atividadeService.atualizarAtividade(atividade);
-    }
-
-    public void excluirAtividade(int id) {
-        atividadeService.excluirAtividade(id);
-    }
-
-    public List<Atividade> listarTodos() {
-        return atividadeService.listarTodos();
-    }
-
-    public List<Atividade> listarPorDia(String diaSemana) {
-        return atividadeService.listarPorDia(diaSemana);
-    }
-}
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>br.com.cuidar.CuidarApp</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
