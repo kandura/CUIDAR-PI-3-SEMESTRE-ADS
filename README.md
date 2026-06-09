@@ -1,3 +1,37 @@
+# CUIDAR — Versão 3.1 (Camada de Serviço)
+
+Décima versão. Introduz a **camada de serviço** sobre os 12 repositórios JDBC, fechando o segundo dos três níveis do MVC (Controller → **Service** → Repository).
+
+## Mudanças desde a v2.6
+
+Nove novos serviços em `br.com.cuidar.service`, cada um recebendo seus repositórios por construtor (injeção manual, sem framework):
+
+| Service | Repositórios usados | Regras concentradas |
+|---|---|---|
+| `LoginService` | `FuncionarioRepository` | Autenticação por login+senha (texto puro nesta versão — PBKDF2 entra na v3.6) |
+| `ResidenteService` | `Residente` + `Pessoa` | Cadastro 2-em-1 (salva Pessoa depois Residente); valida CPF único (RN01); buscar por CPF/nome |
+| `FuncionarioService` | `Funcionario` + `Pessoa` | Cadastro 2-em-1; valida CPF único; senha obrigatória |
+| `MedicoService` | `Medico` + `Pessoa` | Cadastro 2-em-1; valida CPF único; busca por CRM |
+| `MedicamentoService` | `Medicamento` | CRUD do catálogo |
+| `ProntuarioService` | `Prontuario` | Criação/atualização e consulta por residente |
+| `RegistroClinicoService` | `RegistroClinico` | Adicionar/excluir registros; listar por residente e por período |
+| `ResponsavelService` | `Responsavel` + `ResidenteResponsavel` + `Pessoa` | Cadastro de responsável (com Pessoa); vincular/desvincular ao residente; listar por residente |
+| `AtividadeService` | `Atividade` | CRUD + filtro por dia da semana |
+
+O `CuidarApp` instancia os 12 repositórios e os 9 services, exercita `listarTodos` em cinco deles, faz um teste de `LoginService.autenticar` com a senha correta do primeiro funcionário e outro com senha errada, e consulta prontuário + registros + vínculos do primeiro residente.
+
+## Como rodar
+
+```powershell
+$lib = "C:\caminho\para\lib\postgresql-42.7.3.jar"
+$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
+javac -d out -cp $lib $files
+Copy-Item src\main\resources\application.properties out\ -ErrorAction SilentlyContinue
+java -cp "out;$lib" br.com.cuidar.CuidarApp
+```
+
+---
+
 # CUIDAR — Versão 2.6 (Repositórios JDBC: Prontuario, Medicamento, RegistroClinico, Atividade)
 
 Nona versão. Fecha o conjunto das **12 implementações JDBC** adicionando as últimas quatro: o prontuário (1:1 com residente), o catálogo de medicamentos, o registro clínico (evento que cruza residente + funcionário + medicamento + médico opcional) e o catálogo de atividades.
@@ -14,16 +48,6 @@ Nona versão. Fecha o conjunto das **12 implementações JDBC** adicionando as �
 Com isso o sistema fica com todas as 12 entidades persistidas. A pasta `repository.impl` chega ao total de 12 classes (Pessoa, Cargo, Quarto, Funcionario, Medico, Residente, Responsavel, ResidenteResponsavel, Prontuario, Medicamento, RegistroClinico, Atividade).
 
 O `CuidarApp` agora imprime o catálogo de medicamentos, a agenda de atividades, e — para o primeiro residente da lista — o prontuário e os registros clínicos em ordem decrescente de data.
-
-## Como rodar
-
-```powershell
-$lib = "C:\caminho\para\lib\postgresql-42.7.3.jar"
-$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
-javac -d out -cp $lib $files
-Copy-Item src\main\resources\application.properties out\ -ErrorAction SilentlyContinue
-java -cp "out;$lib" br.com.cuidar.CuidarApp
-```
 
 ---
 

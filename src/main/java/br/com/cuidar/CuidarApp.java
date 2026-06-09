@@ -1,84 +1,111 @@
 package br.com.cuidar;
 
 import br.com.cuidar.model.Atividade;
+import br.com.cuidar.model.Funcionario;
 import br.com.cuidar.model.Medicamento;
-import br.com.cuidar.model.Prontuario;
-import br.com.cuidar.model.RegistroClinico;
+import br.com.cuidar.model.Medico;
 import br.com.cuidar.model.Residente;
-import br.com.cuidar.repository.AtividadeRepository;
-import br.com.cuidar.repository.MedicamentoRepository;
-import br.com.cuidar.repository.ProntuarioRepository;
-import br.com.cuidar.repository.RegistroClinicoRepository;
-import br.com.cuidar.repository.ResidenteRepository;
-import br.com.cuidar.repository.impl.AtividadeRepositoryImpl;
-import br.com.cuidar.repository.impl.MedicamentoRepositoryImpl;
-import br.com.cuidar.repository.impl.ProntuarioRepositoryImpl;
-import br.com.cuidar.repository.impl.RegistroClinicoRepositoryImpl;
-import br.com.cuidar.repository.impl.ResidenteRepositoryImpl;
+import br.com.cuidar.repository.*;
+import br.com.cuidar.repository.impl.*;
+import br.com.cuidar.service.*;
 
 import java.util.List;
 
 /**
  * Classe principal do sistema CUIDAR.
- * Versão 2.6 — fecha o conjunto de 12 implementações JDBC adicionando
- * {@code ProntuarioRepositoryImpl}, {@code MedicamentoRepositoryImpl},
- * {@code RegistroClinicoRepositoryImpl} e {@code AtividadeRepositoryImpl}.
+ * Versão 3.1 — introduz a camada de serviço (9 services) sobre os 12 repositórios.
+ * Os services concentram a lógica de negócio (validação de CPF único, fluxo
+ * pessoa+entidade no cadastro etc.). Ainda sem GUI: a {@code main} apenas
+ * exercita os services consultando o banco real.
  */
 public class CuidarApp {
 
     public static void main(String[] args) {
         System.out.println("=== Sistema CUIDAR ===");
-        System.out.println("Versão 2.6 — Repositórios JDBC: Prontuario, Medicamento, RegistroClinico, Atividade\n");
+        System.out.println("Versão 3.1 — Camada de serviço (9 services)\n");
 
+        PessoaRepository pessoaRepo = new PessoaRepositoryImpl();
+        CargoRepository cargoRepo = new CargoRepositoryImpl();
+        QuartoRepository quartoRepo = new QuartoRepositoryImpl();
+        FuncionarioRepository funcRepo = new FuncionarioRepositoryImpl();
+        MedicoRepository medicoRepo = new MedicoRepositoryImpl();
         ResidenteRepository resRepo = new ResidenteRepositoryImpl();
+        ResponsavelRepository respRepo = new ResponsavelRepositoryImpl();
+        ResidenteResponsavelRepository rrRepo = new ResidenteResponsavelRepositoryImpl();
         ProntuarioRepository pronRepo = new ProntuarioRepositoryImpl();
         MedicamentoRepository medRepo = new MedicamentoRepositoryImpl();
         RegistroClinicoRepository rcRepo = new RegistroClinicoRepositoryImpl();
         AtividadeRepository atvRepo = new AtividadeRepositoryImpl();
 
+        LoginService loginService = new LoginService(funcRepo);
+        ResidenteService residenteService = new ResidenteService(resRepo, pessoaRepo);
+        FuncionarioService funcionarioService = new FuncionarioService(funcRepo, pessoaRepo);
+        MedicoService medicoService = new MedicoService(medicoRepo, pessoaRepo);
+        MedicamentoService medicamentoService = new MedicamentoService(medRepo);
+        ProntuarioService prontuarioService = new ProntuarioService(pronRepo);
+        RegistroClinicoService rcService = new RegistroClinicoService(rcRepo);
+        ResponsavelService responsavelService = new ResponsavelService(respRepo, rrRepo, pessoaRepo);
+        AtividadeService atividadeService = new AtividadeService(atvRepo);
+
+        // evita "variável não utilizada" e prova que tudo cabe no main em conjunto.
+        System.out.println("Services instanciados: " + 9 + " ("
+                + loginService.getClass().getSimpleName() + ", "
+                + residenteService.getClass().getSimpleName() + ", "
+                + funcionarioService.getClass().getSimpleName() + ", "
+                + medicoService.getClass().getSimpleName() + ", "
+                + medicamentoService.getClass().getSimpleName() + ", "
+                + prontuarioService.getClass().getSimpleName() + ", "
+                + rcService.getClass().getSimpleName() + ", "
+                + responsavelService.getClass().getSimpleName() + ", "
+                + atividadeService.getClass().getSimpleName() + ")");
+        System.out.println("Repositórios em uso: 12 (pessoa, cargo, quarto, funcionario, medico, "
+                + "residente, responsavel, residente_responsavel, prontuario, medicamento, "
+                + "registro_clinico, atividade) — refs: "
+                + pessoaRepo.getClass().getSimpleName() + "/"
+                + cargoRepo.getClass().getSimpleName() + "/"
+                + quartoRepo.getClass().getSimpleName());
+
         try {
-            List<Medicamento> medicamentos = medRepo.listarTodos();
-            System.out.println("Catálogo de medicamentos (" + medicamentos.size() + "):");
-            for (Medicamento m : medicamentos) {
-                System.out.println("  - " + m.getId() + " | " + m.getNome()
-                        + " (" + m.getFabricante() + ")"
-                        + " | qtd=" + m.getQuantidade()
-                        + " | val=" + m.getDataValidade());
+            List<Residente> residentes = residenteService.listarTodos();
+            System.out.println("\n[ResidenteService] listarTodos -> " + residentes.size() + " residente(s)");
+
+            List<Funcionario> funcs = funcionarioService.listarTodos();
+            System.out.println("[FuncionarioService] listarTodos -> " + funcs.size() + " funcionário(s)");
+
+            List<Medico> medicos = medicoService.listarTodos();
+            System.out.println("[MedicoService] listarTodos -> " + medicos.size() + " médico(s)");
+
+            List<Medicamento> medicamentos = medicamentoService.listarTodos();
+            System.out.println("[MedicamentoService] listarTodos -> " + medicamentos.size() + " medicamento(s)");
+
+            List<Atividade> atividades = atividadeService.listarTodos();
+            System.out.println("[AtividadeService] listarTodos -> " + atividades.size() + " atividade(s)");
+
+            if (!funcs.isEmpty()) {
+                Funcionario primeiro = funcs.get(0);
+                Funcionario auth = loginService.autenticar(primeiro.getLogin(), primeiro.getSenha());
+                System.out.println("[LoginService] autenticar('" + primeiro.getLogin()
+                        + "', '<senha-cadastrada>') -> " + (auth != null ? "OK ("
+                        + auth.getPessoa().getNomeCompleto() + ")" : "FALHA"));
+                Funcionario authBad = loginService.autenticar(primeiro.getLogin(), "senha_errada_xyz");
+                System.out.println("[LoginService] autenticar(login, 'senha_errada_xyz') -> "
+                        + (authBad != null ? "OK" : "negado (esperado)"));
             }
 
-            List<Atividade> atividades = atvRepo.listarTodos();
-            System.out.println("\nAtividades cadastradas (" + atividades.size() + "):");
-            for (Atividade a : atividades) {
-                System.out.println("  - " + a.getDiaSemana() + " " + a.getHoraInicio()
-                        + "-" + a.getHoraTermino() + " | " + a.getNome());
-            }
-
-            List<Residente> residentes = resRepo.listarTodos();
             if (!residentes.isEmpty()) {
                 Residente r = residentes.get(0);
-
-                Prontuario pron = pronRepo.buscarPorResidente(r);
-                System.out.println("\nProntuário de '" + r.getPessoa().getNomeCompleto() + "':");
-                if (pron == null) {
-                    System.out.println("  (sem prontuário cadastrado)");
-                } else {
-                    System.out.println("  peso=" + pron.getPeso() + " | altura=" + pron.getAltura()
-                            + " | tipo=" + pron.getTipoSanguineo()
-                            + " | alergias=" + pron.getAlergias());
-                }
-
-                List<RegistroClinico> registros = rcRepo.listarPorResidente(r);
-                System.out.println("\nRegistros clínicos de '" + r.getPessoa().getNomeCompleto()
-                        + "' (" + registros.size() + "):");
-                for (RegistroClinico rc : registros) {
-                    System.out.println("  - " + rc.getDataRegistro() + " | " + rc.getTipoEvento()
-                            + " | med=" + rc.getMedicamento().getNome()
-                            + " | dose=" + rc.getDosagem()
-                            + " | func=" + rc.getFuncionario().getPessoa().getNomeCompleto());
-                }
+                System.out.println("[ProntuarioService] buscarPorResidente('"
+                        + r.getPessoa().getNomeCompleto() + "') -> "
+                        + (prontuarioService.buscarPorResidente(r) != null ? "encontrado" : "nenhum"));
+                System.out.println("[RCService] listarPorResidente('"
+                        + r.getPessoa().getNomeCompleto() + "') -> "
+                        + rcService.listarPorResidente(r).size() + " registro(s)");
+                System.out.println("[ResponsavelService] listarPorResidente('"
+                        + r.getPessoa().getNomeCompleto() + "') -> "
+                        + responsavelService.listarPorResidente(r).size() + " vínculo(s)");
             }
         } catch (RuntimeException e) {
-            System.err.println("Falha ao consultar o banco: " + e.getMessage());
+            System.err.println("Falha ao exercitar services: " + e.getMessage());
         }
     }
 }
