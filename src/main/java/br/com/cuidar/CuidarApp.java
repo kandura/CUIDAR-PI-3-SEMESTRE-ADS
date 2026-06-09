@@ -1,102 +1,83 @@
 package br.com.cuidar;
 
-import br.com.cuidar.controller.*;
-import br.com.cuidar.model.Atividade;
 import br.com.cuidar.model.Funcionario;
-import br.com.cuidar.model.Medicamento;
-import br.com.cuidar.model.Medico;
-import br.com.cuidar.model.Residente;
-import br.com.cuidar.repository.*;
-import br.com.cuidar.repository.impl.*;
-import br.com.cuidar.service.*;
+import br.com.cuidar.repository.FuncionarioRepository;
+import br.com.cuidar.repository.impl.FuncionarioRepositoryImpl;
+import br.com.cuidar.service.LoginService;
+import br.com.cuidar.view.LoginFrame;
+import br.com.cuidar.view.MainFrame;
 
-import java.util.List;
+import javax.swing.*;
+import java.awt.GraphicsEnvironment;
 
 /**
  * Classe principal do sistema CUIDAR.
- * Versão 3.2 — introduz a camada de controllers (7 fachadas finas) que orquestram
- * os 9 services. É o terceiro andar do MVC, pronto para receber a GUI Swing
- * a partir da v3.3.
+ * Versão 3.3 — primeira GUI Swing: {@code LoginFrame} autentica via
+ * {@code LoginService} e, em sucesso, abre o {@code MainFrame} esqueleto
+ * (sidebar com placeholders). Os painéis reais entram em v3.4/v3.5.
+ *
+ * <p>Sem argumentos: tenta abrir a GUI. Em ambiente sem display gráfico
+ * (CI / validação automatizada), faz fallback para um smoke-test
+ * "headless" que apenas exercita o {@link LoginService} contra o banco real.</p>
  */
 public class CuidarApp {
 
     public static void main(String[] args) {
+        boolean forceHeadless = args.length > 0 && "--headless".equalsIgnoreCase(args[0]);
+        boolean headless = forceHeadless || GraphicsEnvironment.isHeadless();
+
         System.out.println("=== Sistema CUIDAR ===");
-        System.out.println("Versão 3.2 — Camada de controllers (7 controllers)\n");
+        System.out.println("Versão 3.3 — LoginFrame + MainFrame (esqueleto)");
 
-        // Repositórios
-        PessoaRepository pessoaRepo = new PessoaRepositoryImpl();
         FuncionarioRepository funcRepo = new FuncionarioRepositoryImpl();
-        MedicoRepository medicoRepo = new MedicoRepositoryImpl();
-        ResidenteRepository resRepo = new ResidenteRepositoryImpl();
-        ResponsavelRepository respRepo = new ResponsavelRepositoryImpl();
-        ResidenteResponsavelRepository rrRepo = new ResidenteResponsavelRepositoryImpl();
-        ProntuarioRepository pronRepo = new ProntuarioRepositoryImpl();
-        MedicamentoRepository medRepo = new MedicamentoRepositoryImpl();
-        RegistroClinicoRepository rcRepo = new RegistroClinicoRepositoryImpl();
-        AtividadeRepository atvRepo = new AtividadeRepositoryImpl();
+        LoginService loginService = new LoginService(funcRepo);
 
-        // Services
-        ResidenteService residenteService = new ResidenteService(resRepo, pessoaRepo);
-        FuncionarioService funcionarioService = new FuncionarioService(funcRepo, pessoaRepo);
-        MedicoService medicoService = new MedicoService(medicoRepo, pessoaRepo);
-        MedicamentoService medicamentoService = new MedicamentoService(medRepo);
-        ProntuarioService prontuarioService = new ProntuarioService(pronRepo);
-        RegistroClinicoService rcService = new RegistroClinicoService(rcRepo);
-        ResponsavelService responsavelService = new ResponsavelService(respRepo, rrRepo, pessoaRepo);
-        AtividadeService atividadeService = new AtividadeService(atvRepo);
-
-        // Controllers
-        ResidenteController residenteController = new ResidenteController(residenteService, responsavelService);
-        FuncionarioController funcionarioController = new FuncionarioController(funcionarioService);
-        MedicoController medicoController = new MedicoController(medicoService);
-        MedicamentoController medicamentoController = new MedicamentoController(medicamentoService);
-        ProntuarioController prontuarioController = new ProntuarioController(prontuarioService);
-        RegistroClinicoController rcController = new RegistroClinicoController(rcService);
-        AtividadeController atividadeController = new AtividadeController(atividadeService);
-
-        System.out.println("Controllers instanciados: 7 ("
-                + residenteController.getClass().getSimpleName() + ", "
-                + funcionarioController.getClass().getSimpleName() + ", "
-                + medicoController.getClass().getSimpleName() + ", "
-                + medicamentoController.getClass().getSimpleName() + ", "
-                + prontuarioController.getClass().getSimpleName() + ", "
-                + rcController.getClass().getSimpleName() + ", "
-                + atividadeController.getClass().getSimpleName() + ")\n");
+        if (headless) {
+            System.out.println("[modo headless] sem display — exercitando LoginService.\n");
+            try {
+                java.util.List<Funcionario> funcs = funcRepo.listarTodos();
+                System.out.println("Funcionários disponíveis para login (" + funcs.size() + "):");
+                for (Funcionario f : funcs) {
+                    System.out.println("  - login=" + f.getLogin()
+                            + " | nome=" + f.getPessoa().getNomeCompleto()
+                            + " | cargo=" + (f.getCargo() != null ? f.getCargo().getNomeCargo() : "?"));
+                }
+                if (!funcs.isEmpty()) {
+                    Funcionario primeiro = funcs.get(0);
+                    Funcionario auth = loginService.autenticar(primeiro.getLogin(), primeiro.getSenha());
+                    System.out.println("\nautenticar('" + primeiro.getLogin() + "', senha-real) -> "
+                            + (auth != null ? "OK (" + auth.getPessoa().getNomeCompleto() + ")" : "FALHA"));
+                    Funcionario bad = loginService.autenticar(primeiro.getLogin(), "errada_xyz");
+                    System.out.println("autenticar('" + primeiro.getLogin() + "', errada) -> "
+                            + (bad != null ? "OK" : "negado (esperado)"));
+                }
+                System.out.println("\n[modo headless] OK. Rode sem --headless num desktop para abrir a GUI.");
+            } catch (RuntimeException e) {
+                System.err.println("Falha ao consultar funcionários: " + e.getMessage());
+            }
+            return;
+        }
 
         try {
-            List<Residente> residentes = residenteController.listarTodos();
-            System.out.println("[ResidenteController] listarTodos -> " + residentes.size());
-
-            List<Funcionario> funcs = funcionarioController.listarTodos();
-            System.out.println("[FuncionarioController] listarTodos -> " + funcs.size());
-
-            List<Medico> medicos = medicoController.listarTodos();
-            System.out.println("[MedicoController] listarTodos -> " + medicos.size());
-
-            List<Medicamento> meds = medicamentoController.listarTodos();
-            System.out.println("[MedicamentoController] listarTodos -> " + meds.size());
-
-            List<Atividade> atvs = atividadeController.listarTodos();
-            System.out.println("[AtividadeController] listarTodos -> " + atvs.size());
-
-            if (!residentes.isEmpty()) {
-                Residente r = residentes.get(0);
-                System.out.println("\n--- Visão do residente '" + r.getPessoa().getNomeCompleto() + "' ---");
-                System.out.println("[ResidenteController] buscarPorCpf('" + r.getPessoa().getCpf() + "') -> "
-                        + (residenteController.buscarPorCpf(r.getPessoa().getCpf()) != null ? "encontrado" : "nulo"));
-                System.out.println("[ResidenteController] listarResponsaveis -> "
-                        + residenteController.listarResponsaveis(r).size() + " vínculo(s)");
-                System.out.println("[ProntuarioController] buscarPorResidente -> "
-                        + (prontuarioController.buscarPorResidente(r) != null ? "encontrado" : "nenhum"));
-                System.out.println("[RCController] listarPorResidente -> "
-                        + rcController.listarPorResidente(r).size() + " registro(s)");
-            }
-
-            System.out.println("[AtividadeController] listarPorDia('Sexta') -> "
-                    + atividadeController.listarPorDia("Sexta").size());
-        } catch (RuntimeException e) {
-            System.err.println("Falha ao exercitar controllers: " + e.getMessage());
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {
         }
+
+        SwingUtilities.invokeLater(() -> {
+            LoginFrame login = new LoginFrame(loginService);
+            login.setVisible(true);
+            // bloqueia até o login fechar (modal "improvisado" via loop de visibilidade):
+            login.addWindowListener(new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowClosed(java.awt.event.WindowEvent e) {
+                    Funcionario f = login.getFuncionarioLogado();
+                    if (f != null) {
+                        new MainFrame(f).setVisible(true);
+                    } else {
+                        System.exit(0);
+                    }
+                }
+            });
+        });
     }
 }
