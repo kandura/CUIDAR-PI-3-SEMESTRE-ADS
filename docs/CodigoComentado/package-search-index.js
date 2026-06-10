@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"br.com.cuidar.model"}];updateSearchResults();
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"br.com.cuidar"},{"l":"br.com.cuidar.config"},{"l":"br.com.cuidar.controller"},{"l":"br.com.cuidar.model"},{"l":"br.com.cuidar.repository"},{"l":"br.com.cuidar.repository.impl"},{"l":"br.com.cuidar.service"},{"l":"br.com.cuidar.util"},{"l":"br.com.cuidar.view"}];updateSearchResults();

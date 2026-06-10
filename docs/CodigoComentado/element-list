@@ -1,1 +1,9 @@
+br.com.cuidar
+br.com.cuidar.config
+br.com.cuidar.controller
 br.com.cuidar.model
+br.com.cuidar.repository
+br.com.cuidar.repository.impl
+br.com.cuidar.service
+br.com.cuidar.util
+br.com.cuidar.view
