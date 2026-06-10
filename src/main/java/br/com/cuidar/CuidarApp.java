@@ -13,15 +13,16 @@ import java.awt.GraphicsEnvironment;
 
 /**
  * Classe principal do sistema CUIDAR.
- * Versão 3.4 — Plugin de painéis: a aba "Residentes" recebe
- * {@code CadastroResidentePanel} (formulário + tabela + filtro) e a aba
- * "Administrativo" recebe {@code ControleAdministrativoPanel} (abas
- * Funcionários/Médicos/Quartos para admin, "Meu Perfil" para os demais).
- * As outras três abas permanecem placeholder até a v3.5.
+ * Versão 3.5 — Todas as 5 abas têm painel real: {@code CadastroResidentePanel},
+ * {@code ControleMedicamentoPanel}, {@code GestaoAtividadePanel},
+ * {@code ProntuarioPanel} e {@code ControleAdministrativoPanel}. Não há mais
+ * placeholders. A v3.6 adicionará RBAC dinâmico na sidebar (alguns itens
+ * sumirem por cargo), o fluxo de "Trocar de conta" e o PBKDF2 + migração de
+ * senhas legadas no {@code LoginService}.
  *
  * <p>Sem argumentos: tenta abrir a GUI. Em ambiente sem display gráfico,
- * faz fallback para um smoke-test "headless" que apenas exercita os
- * controllers usados pelos panels novos.</p>
+ * faz fallback para um smoke-test "headless" que exercita os 7 controllers
+ * usados pelos painéis novos.</p>
  */
 public class CuidarApp {
 
@@ -30,7 +31,7 @@ public class CuidarApp {
         boolean headless = forceHeadless || GraphicsEnvironment.isHeadless();
 
         System.out.println("=== Sistema CUIDAR ===");
-        System.out.println("Versão 3.4 — CadastroResidentePanel + ControleAdministrativoPanel");
+        System.out.println("Versão 3.5 — Medicamento + Atividade + Prontuário panels (5/5 telas)");
 
         // Repositórios
         PessoaRepository pessoaRepo = new PessoaRepositoryImpl();
@@ -41,6 +42,10 @@ public class CuidarApp {
         ResidenteRepository resRepo = new ResidenteRepositoryImpl();
         ResponsavelRepository respRepo = new ResponsavelRepositoryImpl();
         ResidenteResponsavelRepository rrRepo = new ResidenteResponsavelRepositoryImpl();
+        ProntuarioRepository pronRepo = new ProntuarioRepositoryImpl();
+        MedicamentoRepository medRepo = new MedicamentoRepositoryImpl();
+        RegistroClinicoRepository rcRepo = new RegistroClinicoRepositoryImpl();
+        AtividadeRepository atvRepo = new AtividadeRepositoryImpl();
 
         // Services
         LoginService loginService = new LoginService(funcRepo);
@@ -48,30 +53,49 @@ public class CuidarApp {
         FuncionarioService funcionarioService = new FuncionarioService(funcRepo, pessoaRepo);
         MedicoService medicoService = new MedicoService(medicoRepo, pessoaRepo);
         ResponsavelService responsavelService = new ResponsavelService(respRepo, rrRepo, pessoaRepo);
+        ProntuarioService prontuarioService = new ProntuarioService(pronRepo);
+        MedicamentoService medicamentoService = new MedicamentoService(medRepo);
+        RegistroClinicoService registroClinicoService = new RegistroClinicoService(rcRepo);
+        AtividadeService atividadeService = new AtividadeService(atvRepo);
 
         // Controllers
         ResidenteController residenteController = new ResidenteController(residenteService, responsavelService);
         FuncionarioController funcionarioController = new FuncionarioController(funcionarioService);
         MedicoController medicoController = new MedicoController(medicoService);
+        MedicamentoController medicamentoController = new MedicamentoController(medicamentoService);
+        AtividadeController atividadeController = new AtividadeController(atividadeService);
+        ProntuarioController prontuarioController = new ProntuarioController(prontuarioService);
+        RegistroClinicoController registroClinicoController = new RegistroClinicoController(registroClinicoService);
 
         if (headless) {
-            System.out.println("[modo headless] sem display — exercitando controllers usados pelos panels.\n");
+            System.out.println("[modo headless] sem display — exercitando controllers das 5 telas.\n");
             try {
-                System.out.println("[ResidenteController] listarTodos -> "
+                System.out.println("[ResidenteController]      listarTodos -> "
                         + residenteController.listarTodos().size());
-                System.out.println("[FuncionarioController] listarTodos -> "
+                System.out.println("[FuncionarioController]    listarTodos -> "
                         + funcionarioController.listarTodos().size());
-                System.out.println("[MedicoController] listarTodos -> "
+                System.out.println("[MedicoController]         listarTodos -> "
                         + medicoController.listarTodos().size());
-                System.out.println("[QuartoRepository] listarTodos -> "
+                System.out.println("[MedicamentoController]    listarTodos -> "
+                        + medicamentoController.listarTodos().size());
+                System.out.println("[AtividadeController]      listarTodos -> "
+                        + atividadeController.listarTodos().size());
+                System.out.println("[QuartoRepository]         listarTodos -> "
                         + quartoRepo.listarTodos().size());
-                System.out.println("[CargoRepository] listarTodos -> "
+                System.out.println("[CargoRepository]          listarTodos -> "
                         + cargoRepo.listarTodos().size());
-                Funcionario adminFake = funcRepo.buscarPorLogin("patricia.gomes");
-                if (adminFake != null) {
-                    System.out.println("\nFuncionário admin sample: " + adminFake.getPessoa().getNomeCompleto()
-                            + " | cargo=" + adminFake.getCargo().getNomeCargo()
-                            + " | login=" + adminFake.getLogin());
+
+                // Prontuário + registros clínicos: usa um residente cadastrado
+                var residentes = residenteController.listarTodos();
+                if (!residentes.isEmpty()) {
+                    var r0 = residentes.get(0);
+                    var p = prontuarioController.buscarPorResidente(r0);
+                    System.out.println("\n[ProntuarioController] residente '"
+                            + r0.getPessoa().getNomeCompleto() + "' -> "
+                            + (p != null ? "prontuário OK (peso=" + p.getPeso() + ", altura=" + p.getAltura() + ")"
+                                          : "sem prontuário"));
+                    System.out.println("[RegistroClinicoController] registros do mesmo residente -> "
+                            + registroClinicoController.listarPorResidente(r0).size());
                 }
                 System.out.println("\n[modo headless] OK.");
             } catch (RuntimeException e) {
@@ -94,7 +118,9 @@ public class CuidarApp {
                     Funcionario f = login.getFuncionarioLogado();
                     if (f != null) {
                         new MainFrame(f, residenteController, funcionarioController,
-                                medicoController, quartoRepo, cargoRepo).setVisible(true);
+                                medicoController, medicamentoController, atividadeController,
+                                prontuarioController, registroClinicoController,
+                                quartoRepo, cargoRepo).setVisible(true);
                     } else {
                         System.exit(0);
                     }

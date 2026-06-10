@@ -7,11 +7,11 @@
 
     <groupId>br.com.cuidar</groupId>
     <artifactId>cuidar</artifactId>
-    <version>3.4-SNAPSHOT</version>
+    <version>3.5-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>CUIDAR</name>
-    <description>Sistema de Cuidado Integrado para Residências de Idosos — Versão 3.4 (CadastroResidentePanel + ControleAdministrativoPanel + util CpfUtil/InputHelper)</description>
+    <description>Sistema de Cuidado Integrado para Residências de Idosos — Versão 3.5 (ControleMedicamentoPanel + GestaoAtividadePanel + ProntuarioPanel — 5/5 telas)</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

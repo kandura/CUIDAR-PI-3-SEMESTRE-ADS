@@ -1,3 +1,67 @@
+# CUIDAR — Versão 3.5 (Medicamento + Atividade + Prontuário panels — 5/5 telas)
+
+Décima quarta versão. Acrescentou os **três painéis finais** ao `MainFrame`, fechando as cinco telas da sidebar: Residentes, Medicamentos, Atividades, Prontuário e Administrativo. Não há mais placeholders "em construção".
+
+## Mudanças desde a v3.4
+
+Três novas classes em `br.com.cuidar.view`:
+
+| Nova classe | Responsabilidade |
+|---|---|
+| `ControleMedicamentoPanel` | Cadastro/edição do **catálogo** de `Medicamento` (Nome, Fabricante, Validade `dd/MM/yyyy`, Quantidade, Descrição). Estados `NOVO/VIEW/EDIT`. Filtro em tempo real por nome via `KeyListener` no `JTextField`. Valida data + número inteiro antes de salvar. |
+| `GestaoAtividadePanel` | CRUD completo de `Atividade` (Nome, Dia da Semana — 7 dias, Hora Início + Hora Término `HH:mm`, Descrição). Inclui `JButton` "Excluir" com `JOptionPane` de confirmação. Filtro por dia da semana (combo "Todos / Segunda / .../ Domingo") chama `AtividadeController.listarPorDia(...)`. |
+| `ProntuarioPanel` | A tela mais complexa. Topo: busca de `Residente` por CPF (`ResidenteController.buscarPorCpf`). Meio: form de `Prontuario` (Peso, Altura, Tipo Sanguíneo, Alergias, **Obs. Geral**) com estados `VAZIO/NOVO/VIEW/EDIT` — cria automaticamente se o residente ainda não tiver prontuário. Logo abaixo: form de **Novo Registro Clínico** (Tipo, Medicamento, Dosagem, Médico, Intercorrência) que grava com `funcionarioLogado` como autor. Centro: tabela de histórico com botão "Excluir Registro". |
+
+Os três painéis dependem só de controllers/repos já existentes desde a v3.2 — nenhuma camada nova foi necessária.
+
+### Atualizações em `MainFrame`
+
+Construtor passou a receber **oito** colaboradores (todos os 7 controllers + `QuartoRepository` + `CargoRepository`):
+
+```java
+new MainFrame(funcionarioLogado,
+              residenteController, funcionarioController, medicoController,
+              medicamentoController, atividadeController,
+              prontuarioController, registroClinicoController,
+              quartoRepository, cargoRepository)
+```
+
+Os cinco `add(...)` no `CardLayout` agora plugam panels reais:
+
+| Card | Panel |
+|---|---|
+| `residentes` | `CadastroResidentePanel` |
+| `medicamentos` | `ControleMedicamentoPanel` |
+| `atividades` | `GestaoAtividadePanel` |
+| `prontuario` | `ProntuarioPanel` |
+| `administrativo` | `ControleAdministrativoPanel` |
+
+### Atualizações em `CuidarApp`
+
+Monta os **12 repositórios**, **9 serviços** e **7 controladores** completos, e injeta tudo no `MainFrame`. O modo `--headless` agora valida `ProntuarioController.buscarPorResidente(residentes.get(0))` e `RegistroClinicoController.listarPorResidente(...)` além das listagens dos demais.
+
+### O que ainda não tem (chega na v3.6 = "src/" raiz)
+
+- **`util/PasswordUtil`** com PBKDF2-HMAC-SHA256 (210 000 iterações, salt 16 B, formato `PBKDF2$<iter>$<saltB64>$<hashB64>`).
+- **`LoginService` com migração automática** de senha legada → PBKDF2 no primeiro login bem-sucedido.
+- **RBAC dinâmico na sidebar**: itens visíveis variam por cargo do `funcionarioLogado`; aba "Administrativo" vira "Meu Perfil" para não-administradores (essa parte do `ControleAdministrativoPanel` já está pronta desde a v3.4, mas a sidebar ainda não esconde itens).
+- **Trocar de conta**: botão "Sair" abre `JOptionPane` com 3 escolhas ("Trocar de conta / Encerrar sistema / Cancelar") — quando trocar, volta ao `LoginFrame` sem matar o processo.
+
+## Como rodar
+
+```powershell
+$lib = "C:\caminho\para\lib\postgresql-42.7.3.jar"
+$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
+javac -d out -cp $lib $files
+Copy-Item src\main\resources\application.properties out\ -ErrorAction SilentlyContinue
+# GUI (desktop):
+java -cp "out;$lib" br.com.cuidar.CuidarApp
+# Smoke-test sem display:
+java -cp "out;$lib" br.com.cuidar.CuidarApp --headless
+```
+
+---
+
 # CUIDAR — Versão 3.4 (CadastroResidentePanel + ControleAdministrativoPanel)
 
 Décima terceira versão. Plugou os dois primeiros painéis funcionais nas abas da sidebar do `MainFrame`: **"Residentes"** ganha o cadastro completo de moradores e **"Administrativo"** ganha o CRUD de funcionários, médicos e quartos (com filtro por cargo do usuário logado).
@@ -39,19 +103,6 @@ Monta a árvore de dependências (repos → services → controllers) e injeta t
 
 - **Painéis Medicamentos / Atividades / Prontuário** — entram na v3.5.
 - **PBKDF2 + RBAC + Trocar de conta + Migração de senha legada** — entram na v3.6 junto com `PasswordUtil` e a sincronia final com o `src/` raiz.
-
-## Como rodar
-
-```powershell
-$lib = "C:\caminho\para\lib\postgresql-42.7.3.jar"
-$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
-javac -d out -cp $lib $files
-Copy-Item src\main\resources\application.properties out\ -ErrorAction SilentlyContinue
-# GUI (desktop):
-java -cp "out;$lib" br.com.cuidar.CuidarApp
-# Smoke-test sem display:
-java -cp "out;$lib" br.com.cuidar.CuidarApp --headless
-```
 
 ---
 
@@ -332,3 +383,4 @@ Cargo{id=1, nomeCargo='Administrador'}
 Funcionario{id=1, pessoa=Pessoa{...}, cargo=Cargo{...}, login='maria.silva'}
 Dr. João Souza
 ```
+s

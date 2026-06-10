@@ -1,8 +1,6 @@
 package br.com.cuidar.view;
 
-import br.com.cuidar.controller.FuncionarioController;
-import br.com.cuidar.controller.MedicoController;
-import br.com.cuidar.controller.ResidenteController;
+import br.com.cuidar.controller.*;
 import br.com.cuidar.model.Funcionario;
 import br.com.cuidar.repository.CargoRepository;
 import br.com.cuidar.repository.QuartoRepository;
@@ -12,11 +10,10 @@ import java.awt.*;
 
 /**
  * Frame principal do sistema CUIDAR.
- * Versão 3.4: pluga {@link CadastroResidentePanel} na aba "Residentes" e
- * {@link ControleAdministrativoPanel} na aba "Administrativo". As três abas
- * restantes (Medicamentos, Atividades, Prontuário) seguem como placeholder
- * até a v3.5; a sidebar dinâmica por cargo (RBAC) e o fluxo de troca de
- * conta entram na v3.6.
+ * Versão 3.5: pluga os <strong>cinco</strong> painéis funcionais nas abas da sidebar.
+ * As três telas finais — {@link ControleMedicamentoPanel}, {@link GestaoAtividadePanel}
+ * e {@link ProntuarioPanel} — entram nesta versão, eliminando todos os placeholders.
+ * RBAC dinâmico na sidebar e fluxo de "Trocar de conta" continuam reservados para a v3.6.
  */
 public class MainFrame extends JFrame {
 
@@ -28,18 +25,27 @@ public class MainFrame extends JFrame {
                      ResidenteController residenteController,
                      FuncionarioController funcionarioController,
                      MedicoController medicoController,
+                     MedicamentoController medicamentoController,
+                     AtividadeController atividadeController,
+                     ProntuarioController prontuarioController,
+                     RegistroClinicoController registroClinicoController,
                      QuartoRepository quartoRepository,
                      CargoRepository cargoRepository) {
         this.funcionarioLogado = funcionarioLogado;
         this.cardLayout = new CardLayout();
         this.painelConteudo = new JPanel(cardLayout);
         initComponents(residenteController, funcionarioController, medicoController,
-                quartoRepository, cargoRepository);
+                medicamentoController, atividadeController, prontuarioController,
+                registroClinicoController, quartoRepository, cargoRepository);
     }
 
     private void initComponents(ResidenteController residenteController,
                                 FuncionarioController funcionarioController,
                                 MedicoController medicoController,
+                                MedicamentoController medicamentoController,
+                                AtividadeController atividadeController,
+                                ProntuarioController prontuarioController,
+                                RegistroClinicoController registroClinicoController,
                                 QuartoRepository quartoRepository,
                                 CargoRepository cargoRepository) {
 
@@ -110,26 +116,17 @@ public class MainFrame extends JFrame {
 
         add(sidebar, BorderLayout.WEST);
 
-        // ===== PAINEIS DE CONTEUDO =====
+        // ===== PAINEIS DE CONTEUDO — 5/5 reais =====
         painelConteudo.add(new CadastroResidentePanel(residenteController, quartoRepository), "residentes");
-        painelConteudo.add(criarPlaceholder("Medicamentos"), "medicamentos");
-        painelConteudo.add(criarPlaceholder("Atividades"), "atividades");
-        painelConteudo.add(criarPlaceholder("Prontuário"), "prontuario");
+        painelConteudo.add(new ControleMedicamentoPanel(medicamentoController), "medicamentos");
+        painelConteudo.add(new GestaoAtividadePanel(atividadeController), "atividades");
+        painelConteudo.add(new ProntuarioPanel(prontuarioController, registroClinicoController,
+                residenteController, medicamentoController, medicoController, funcionarioLogado), "prontuario");
         painelConteudo.add(new ControleAdministrativoPanel(funcionarioController, medicoController,
                 quartoRepository, cargoRepository, funcionarioLogado), "administrativo");
 
         cardLayout.show(painelConteudo, "residentes");
         add(painelConteudo, BorderLayout.CENTER);
-    }
-
-    private JPanel criarPlaceholder(String titulo) {
-        JPanel p = new JPanel(new GridBagLayout());
-        p.setBackground(Color.WHITE);
-        JLabel lbl = new JLabel(titulo + " — em construção");
-        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 22));
-        lbl.setForeground(new Color(120, 120, 120));
-        p.add(lbl);
-        return p;
     }
 
     private JButton criarBotaoMenu(String texto, String card) {
