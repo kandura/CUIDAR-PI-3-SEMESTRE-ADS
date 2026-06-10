@@ -1,9 +1,10 @@
 package br.com.cuidar;
 
+import br.com.cuidar.controller.*;
 import br.com.cuidar.model.Funcionario;
-import br.com.cuidar.repository.FuncionarioRepository;
-import br.com.cuidar.repository.impl.FuncionarioRepositoryImpl;
-import br.com.cuidar.service.LoginService;
+import br.com.cuidar.repository.*;
+import br.com.cuidar.repository.impl.*;
+import br.com.cuidar.service.*;
 import br.com.cuidar.view.LoginFrame;
 import br.com.cuidar.view.MainFrame;
 
@@ -12,13 +13,15 @@ import java.awt.GraphicsEnvironment;
 
 /**
  * Classe principal do sistema CUIDAR.
- * Versão 3.3 — primeira GUI Swing: {@code LoginFrame} autentica via
- * {@code LoginService} e, em sucesso, abre o {@code MainFrame} esqueleto
- * (sidebar com placeholders). Os painéis reais entram em v3.4/v3.5.
+ * Versão 3.4 — Plugin de painéis: a aba "Residentes" recebe
+ * {@code CadastroResidentePanel} (formulário + tabela + filtro) e a aba
+ * "Administrativo" recebe {@code ControleAdministrativoPanel} (abas
+ * Funcionários/Médicos/Quartos para admin, "Meu Perfil" para os demais).
+ * As outras três abas permanecem placeholder até a v3.5.
  *
- * <p>Sem argumentos: tenta abrir a GUI. Em ambiente sem display gráfico
- * (CI / validação automatizada), faz fallback para um smoke-test
- * "headless" que apenas exercita o {@link LoginService} contra o banco real.</p>
+ * <p>Sem argumentos: tenta abrir a GUI. Em ambiente sem display gráfico,
+ * faz fallback para um smoke-test "headless" que apenas exercita os
+ * controllers usados pelos panels novos.</p>
  */
 public class CuidarApp {
 
@@ -27,33 +30,52 @@ public class CuidarApp {
         boolean headless = forceHeadless || GraphicsEnvironment.isHeadless();
 
         System.out.println("=== Sistema CUIDAR ===");
-        System.out.println("Versão 3.3 — LoginFrame + MainFrame (esqueleto)");
+        System.out.println("Versão 3.4 — CadastroResidentePanel + ControleAdministrativoPanel");
 
+        // Repositórios
+        PessoaRepository pessoaRepo = new PessoaRepositoryImpl();
+        CargoRepository cargoRepo = new CargoRepositoryImpl();
+        QuartoRepository quartoRepo = new QuartoRepositoryImpl();
         FuncionarioRepository funcRepo = new FuncionarioRepositoryImpl();
+        MedicoRepository medicoRepo = new MedicoRepositoryImpl();
+        ResidenteRepository resRepo = new ResidenteRepositoryImpl();
+        ResponsavelRepository respRepo = new ResponsavelRepositoryImpl();
+        ResidenteResponsavelRepository rrRepo = new ResidenteResponsavelRepositoryImpl();
+
+        // Services
         LoginService loginService = new LoginService(funcRepo);
+        ResidenteService residenteService = new ResidenteService(resRepo, pessoaRepo);
+        FuncionarioService funcionarioService = new FuncionarioService(funcRepo, pessoaRepo);
+        MedicoService medicoService = new MedicoService(medicoRepo, pessoaRepo);
+        ResponsavelService responsavelService = new ResponsavelService(respRepo, rrRepo, pessoaRepo);
+
+        // Controllers
+        ResidenteController residenteController = new ResidenteController(residenteService, responsavelService);
+        FuncionarioController funcionarioController = new FuncionarioController(funcionarioService);
+        MedicoController medicoController = new MedicoController(medicoService);
 
         if (headless) {
-            System.out.println("[modo headless] sem display — exercitando LoginService.\n");
+            System.out.println("[modo headless] sem display — exercitando controllers usados pelos panels.\n");
             try {
-                java.util.List<Funcionario> funcs = funcRepo.listarTodos();
-                System.out.println("Funcionários disponíveis para login (" + funcs.size() + "):");
-                for (Funcionario f : funcs) {
-                    System.out.println("  - login=" + f.getLogin()
-                            + " | nome=" + f.getPessoa().getNomeCompleto()
-                            + " | cargo=" + (f.getCargo() != null ? f.getCargo().getNomeCargo() : "?"));
+                System.out.println("[ResidenteController] listarTodos -> "
+                        + residenteController.listarTodos().size());
+                System.out.println("[FuncionarioController] listarTodos -> "
+                        + funcionarioController.listarTodos().size());
+                System.out.println("[MedicoController] listarTodos -> "
+                        + medicoController.listarTodos().size());
+                System.out.println("[QuartoRepository] listarTodos -> "
+                        + quartoRepo.listarTodos().size());
+                System.out.println("[CargoRepository] listarTodos -> "
+                        + cargoRepo.listarTodos().size());
+                Funcionario adminFake = funcRepo.buscarPorLogin("patricia.gomes");
+                if (adminFake != null) {
+                    System.out.println("\nFuncionário admin sample: " + adminFake.getPessoa().getNomeCompleto()
+                            + " | cargo=" + adminFake.getCargo().getNomeCargo()
+                            + " | login=" + adminFake.getLogin());
                 }
-                if (!funcs.isEmpty()) {
-                    Funcionario primeiro = funcs.get(0);
-                    Funcionario auth = loginService.autenticar(primeiro.getLogin(), primeiro.getSenha());
-                    System.out.println("\nautenticar('" + primeiro.getLogin() + "', senha-real) -> "
-                            + (auth != null ? "OK (" + auth.getPessoa().getNomeCompleto() + ")" : "FALHA"));
-                    Funcionario bad = loginService.autenticar(primeiro.getLogin(), "errada_xyz");
-                    System.out.println("autenticar('" + primeiro.getLogin() + "', errada) -> "
-                            + (bad != null ? "OK" : "negado (esperado)"));
-                }
-                System.out.println("\n[modo headless] OK. Rode sem --headless num desktop para abrir a GUI.");
+                System.out.println("\n[modo headless] OK.");
             } catch (RuntimeException e) {
-                System.err.println("Falha ao consultar funcionários: " + e.getMessage());
+                System.err.println("Falha headless: " + e.getMessage());
             }
             return;
         }
@@ -66,13 +88,13 @@ public class CuidarApp {
         SwingUtilities.invokeLater(() -> {
             LoginFrame login = new LoginFrame(loginService);
             login.setVisible(true);
-            // bloqueia até o login fechar (modal "improvisado" via loop de visibilidade):
             login.addWindowListener(new java.awt.event.WindowAdapter() {
                 @Override
                 public void windowClosed(java.awt.event.WindowEvent e) {
                     Funcionario f = login.getFuncionarioLogado();
                     if (f != null) {
-                        new MainFrame(f).setVisible(true);
+                        new MainFrame(f, residenteController, funcionarioController,
+                                medicoController, quartoRepo, cargoRepo).setVisible(true);
                     } else {
                         System.exit(0);
                     }

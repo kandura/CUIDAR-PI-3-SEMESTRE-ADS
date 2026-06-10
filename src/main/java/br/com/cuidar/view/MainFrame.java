@@ -1,17 +1,22 @@
 package br.com.cuidar.view;
 
+import br.com.cuidar.controller.FuncionarioController;
+import br.com.cuidar.controller.MedicoController;
+import br.com.cuidar.controller.ResidenteController;
 import br.com.cuidar.model.Funcionario;
+import br.com.cuidar.repository.CargoRepository;
+import br.com.cuidar.repository.QuartoRepository;
 
 import javax.swing.*;
 import java.awt.*;
 
 /**
  * Frame principal do sistema CUIDAR.
- * Versão 3.3 (esqueleto): exibe a sidebar de navegação e troca placeholders
- * via {@link CardLayout}. Os painéis reais são plugados em v3.4/v3.5
- * (CadastroResidente, ControleAdministrativo, ControleMedicamento, GestaoAtividade,
- * Prontuário); a sidebar dinâmica por cargo (RBAC) e o fluxo de troca de conta
- * entram na v3.6.
+ * Versão 3.4: pluga {@link CadastroResidentePanel} na aba "Residentes" e
+ * {@link ControleAdministrativoPanel} na aba "Administrativo". As três abas
+ * restantes (Medicamentos, Atividades, Prontuário) seguem como placeholder
+ * até a v3.5; a sidebar dinâmica por cargo (RBAC) e o fluxo de troca de
+ * conta entram na v3.6.
  */
 public class MainFrame extends JFrame {
 
@@ -19,14 +24,25 @@ public class MainFrame extends JFrame {
     private final CardLayout cardLayout;
     private final JPanel painelConteudo;
 
-    public MainFrame(Funcionario funcionarioLogado) {
+    public MainFrame(Funcionario funcionarioLogado,
+                     ResidenteController residenteController,
+                     FuncionarioController funcionarioController,
+                     MedicoController medicoController,
+                     QuartoRepository quartoRepository,
+                     CargoRepository cargoRepository) {
         this.funcionarioLogado = funcionarioLogado;
         this.cardLayout = new CardLayout();
         this.painelConteudo = new JPanel(cardLayout);
-        initComponents();
+        initComponents(residenteController, funcionarioController, medicoController,
+                quartoRepository, cargoRepository);
     }
 
-    private void initComponents() {
+    private void initComponents(ResidenteController residenteController,
+                                FuncionarioController funcionarioController,
+                                MedicoController medicoController,
+                                QuartoRepository quartoRepository,
+                                CargoRepository cargoRepository) {
+
         setTitle("CUIDAR - Sistema de Gestão ILPI");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1280, 800);
@@ -94,10 +110,14 @@ public class MainFrame extends JFrame {
 
         add(sidebar, BorderLayout.WEST);
 
-        // ===== PAINEIS DE CONTEUDO (placeholders v3.3) =====
-        for (int i = 0; i < cards.length; i++) {
-            painelConteudo.add(criarPlaceholder(menus[i]), cards[i]);
-        }
+        // ===== PAINEIS DE CONTEUDO =====
+        painelConteudo.add(new CadastroResidentePanel(residenteController, quartoRepository), "residentes");
+        painelConteudo.add(criarPlaceholder("Medicamentos"), "medicamentos");
+        painelConteudo.add(criarPlaceholder("Atividades"), "atividades");
+        painelConteudo.add(criarPlaceholder("Prontuário"), "prontuario");
+        painelConteudo.add(new ControleAdministrativoPanel(funcionarioController, medicoController,
+                quartoRepository, cargoRepository, funcionarioLogado), "administrativo");
+
         cardLayout.show(painelConteudo, "residentes");
         add(painelConteudo, BorderLayout.CENTER);
     }

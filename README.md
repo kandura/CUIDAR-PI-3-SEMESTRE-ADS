@@ -1,3 +1,60 @@
+# CUIDAR — Versão 3.4 (CadastroResidentePanel + ControleAdministrativoPanel)
+
+Décima terceira versão. Plugou os dois primeiros painéis funcionais nas abas da sidebar do `MainFrame`: **"Residentes"** ganha o cadastro completo de moradores e **"Administrativo"** ganha o CRUD de funcionários, médicos e quartos (com filtro por cargo do usuário logado).
+
+## Mudanças desde a v3.3
+
+Duas novas classes em `br.com.cuidar.view`:
+
+| Nova classe | Responsabilidade |
+|---|---|
+| `CadastroResidentePanel` | Formulário (Nome, CPF, Data Nasc., Sexo, Status, Quarto, Observações) + tabela com filtro por nome. Estados `NOVO/VIEW/EDIT`: ao selecionar uma linha, o form vai para `VIEW`; "Editar" libera os campos; "Salvar" persiste via `ResidenteController.cadastrarResidente(...)` ou `editarResidente(...)`. O combo de quartos lista apenas os `Disponível` + o atual do residente sendo editado. Valida CPF com `CpfUtil.isValid()` e máscaras de digitação aplicadas via `InputHelper`. |
+| `ControleAdministrativoPanel` | `JTabbedPane` com três abas para administrador (Funcionários, Médicos, Quartos) ou aba única "Meu Perfil" para os demais cargos. Detecta o papel por `funcionarioLogado.getCargo().getNomeCargo()`. Cada aba segue o mesmo ciclo `NOVO/VIEW/EDIT`. A aba Funcionários usa combos com `Cargo` (lista de `CargoRepository`) e `Turno` (Manhã/Tarde/Noite/Diurno/Noturno). Na aba "Meu Perfil", a tabela é só-leitura — qualquer clique em linha de outro funcionário mostra "Acesso restrito". |
+
+Duas novas classes em `br.com.cuidar.util` (eram para entrar só na v3.6, mas os painéis dependem delas):
+
+| Classe | Responsabilidade |
+|---|---|
+| `CpfUtil` | `isValid(String cpf)` — remove pontuação, rejeita comprimento ≠ 11 e CPFs com todos os dígitos iguais, calcula os dois dígitos verificadores e confere. Implementação clássica. |
+| `InputHelper` | Aplica `DocumentFilter` em `JTextField` para máscaras automáticas: `aplicarMascaraData` (dd/MM/yyyy), `aplicarMascaraHora` (HH:mm), `aplicarMascaraCpf`, `aplicarMascaraTelefone` ((00) 00000-0000), `aplicarMascaraCep` (00000-000), além de `aplicarApenasNumeros` e `aplicarApenasDecimal`. |
+
+`PasswordUtil` continua reservada para a **v3.6** (junto da migração de senhas legadas e RBAC) — nesta versão o `LoginService` ainda compara senhas em texto puro, exatamente como na v3.1.
+
+### Atualizações em `MainFrame`
+
+O construtor agora recebe os controllers e repositórios necessários para construir os panels:
+
+```java
+new MainFrame(funcionarioLogado, residenteController, funcionarioController,
+              medicoController, quartoRepository, cargoRepository)
+```
+
+As cinco abas seguem visíveis para todos os usuários (RBAC entra só na v3.6). As três abas restantes — **Medicamentos**, **Atividades** e **Prontuário** — continuam como placeholder "em construção" e serão substituídas na **v3.5**.
+
+### Atualizações em `CuidarApp`
+
+Monta a árvore de dependências (repos → services → controllers) e injeta tudo no `MainFrame`. O modo `--headless` agora exercita `ResidenteController`, `FuncionarioController`, `MedicoController`, `QuartoRepository` e `CargoRepository`, validando que os 5 serviços usados pelos panels respondem contra o banco real.
+
+### O que ainda não tem (chega depois)
+
+- **Painéis Medicamentos / Atividades / Prontuário** — entram na v3.5.
+- **PBKDF2 + RBAC + Trocar de conta + Migração de senha legada** — entram na v3.6 junto com `PasswordUtil` e a sincronia final com o `src/` raiz.
+
+## Como rodar
+
+```powershell
+$lib = "C:\caminho\para\lib\postgresql-42.7.3.jar"
+$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
+javac -d out -cp $lib $files
+Copy-Item src\main\resources\application.properties out\ -ErrorAction SilentlyContinue
+# GUI (desktop):
+java -cp "out;$lib" br.com.cuidar.CuidarApp
+# Smoke-test sem display:
+java -cp "out;$lib" br.com.cuidar.CuidarApp --headless
+```
+
+---
+
 # CUIDAR — Versão 3.3 (LoginFrame + MainFrame esqueleto)
 
 Décima segunda versão. Primeira aparição da **GUI Swing**: tela de login funcional + frame principal esqueleto (sidebar de navegação com placeholders nas cinco abas).
@@ -21,19 +78,6 @@ A `CuidarApp` agora tem dois modos:
 - **Botão Sair só encerra o processo** — a troca de conta com `JOptionPane` ("Trocar de conta / Encerrar sistema / Cancelar") entra na v3.6.
 - **Sidebar sem RBAC** — todo usuário vê todos os itens; a aba "Administrativo" vira "Meu Perfil" para não-administradores na v3.6.
 - **Painéis vazios** — substituídos por `CadastroResidentePanel`/`ControleAdministrativoPanel` na v3.4 e `ControleMedicamentoPanel`/`GestaoAtividadePanel`/`ProntuarioPanel` na v3.5.
-
-## Como rodar
-
-```powershell
-$lib = "C:\caminho\para\lib\postgresql-42.7.3.jar"
-$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
-javac -d out -cp $lib $files
-Copy-Item src\main\resources\application.properties out\ -ErrorAction SilentlyContinue
-# GUI (desktop):
-java -cp "out;$lib" br.com.cuidar.CuidarApp
-# Smoke-test sem display:
-java -cp "out;$lib" br.com.cuidar.CuidarApp --headless
-```
 
 ---
 
