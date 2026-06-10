@@ -15,14 +15,29 @@ public class MedicamentoService {
         this.medicamentoRepository = medicamentoRepository;
     }
 
+    /**
+     * Cadastra um novo medicamento no sistema.
+     *
+     * @param medicamento - medicamento a ser cadastrado
+     */
     public void cadastrarMedicamento(Medicamento medicamento) {
         medicamentoRepository.salvar(medicamento);
     }
 
+    /**
+     * Atualiza os dados de um medicamento existente.
+     *
+     * @param medicamento - medicamento com os dados atualizados
+     */
     public void atualizarMedicamento(Medicamento medicamento) {
         medicamentoRepository.atualizar(medicamento);
     }
 
+    /**
+     * Lista todos os medicamentos cadastrados.
+     *
+     * @return - lista de medicamentos
+     */
     public List<Medicamento> listarTodos() {
         return medicamentoRepository.listarTodos();
     }

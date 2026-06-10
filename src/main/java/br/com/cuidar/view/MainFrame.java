@@ -10,42 +10,44 @@ import java.awt.*;
 
 /**
  * Frame principal do sistema CUIDAR.
- * Versão 3.5: pluga os <strong>cinco</strong> painéis funcionais nas abas da sidebar.
- * As três telas finais — {@link ControleMedicamentoPanel}, {@link GestaoAtividadePanel}
- * e {@link ProntuarioPanel} — entram nesta versão, eliminando todos os placeholders.
- * RBAC dinâmico na sidebar e fluxo de "Trocar de conta" continuam reservados para a v3.6.
+ * Contém uma sidebar de navegação e um {@link CardLayout} que alterna
+ * entre os painéis: Residentes, Medicamentos, Atividades, Prontuário e Administrativo.
  */
 public class MainFrame extends JFrame {
 
     private final Funcionario funcionarioLogado;
     private final CardLayout cardLayout;
     private final JPanel painelConteudo;
+    private final Runnable onLogout;
 
     public MainFrame(Funcionario funcionarioLogado,
                      ResidenteController residenteController,
                      FuncionarioController funcionarioController,
                      MedicoController medicoController,
                      MedicamentoController medicamentoController,
-                     AtividadeController atividadeController,
                      ProntuarioController prontuarioController,
                      RegistroClinicoController registroClinicoController,
+                     AtividadeController atividadeController,
                      QuartoRepository quartoRepository,
-                     CargoRepository cargoRepository) {
+                     CargoRepository cargoRepository,
+                     Runnable onLogout) {
         this.funcionarioLogado = funcionarioLogado;
         this.cardLayout = new CardLayout();
         this.painelConteudo = new JPanel(cardLayout);
+        this.onLogout = onLogout;
+
         initComponents(residenteController, funcionarioController, medicoController,
-                medicamentoController, atividadeController, prontuarioController,
-                registroClinicoController, quartoRepository, cargoRepository);
+                medicamentoController, prontuarioController, registroClinicoController,
+                atividadeController, quartoRepository, cargoRepository);
     }
 
     private void initComponents(ResidenteController residenteController,
                                 FuncionarioController funcionarioController,
                                 MedicoController medicoController,
                                 MedicamentoController medicamentoController,
-                                AtividadeController atividadeController,
                                 ProntuarioController prontuarioController,
                                 RegistroClinicoController registroClinicoController,
+                                AtividadeController atividadeController,
                                 QuartoRepository quartoRepository,
                                 CargoRepository cargoRepository) {
 
@@ -89,7 +91,11 @@ public class MainFrame extends JFrame {
 
         sidebar.add(Box.createRigidArea(new Dimension(0, 15)));
 
-        String[] menus = {"Residentes", "Medicamentos", "Atividades", "Prontuário", "Administrativo"};
+        boolean admin = funcionarioLogado.getCargo() != null
+                && "Administrador".equalsIgnoreCase(funcionarioLogado.getCargo().getNomeCargo());
+        String adminLabel = admin ? "Administrativo" : "Meu Perfil";
+
+        String[] menus = {"Residentes", "Medicamentos", "Atividades", "Prontuário", adminLabel};
         String[] cards = {"residentes", "medicamentos", "atividades", "prontuario", "administrativo"};
         for (int i = 0; i < menus.length; i++) {
             JButton btn = criarBotaoMenu(menus[i], cards[i]);
@@ -111,12 +117,24 @@ public class MainFrame extends JFrame {
         btnSair.setOpaque(true);
         btnSair.setContentAreaFilled(true);
         btnSair.setBorderPainted(false);
-        btnSair.addActionListener(e -> System.exit(0));
+        btnSair.addActionListener(e -> {
+            String[] opcoes = {"Trocar de conta", "Encerrar sistema", "Cancelar"};
+            int op = JOptionPane.showOptionDialog(this,
+                    "O que deseja fazer?",
+                    "Sair", JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.QUESTION_MESSAGE, null, opcoes, opcoes[0]);
+            if (op == 0) {
+                dispose();
+                if (onLogout != null) onLogout.run();
+            } else if (op == 1) {
+                System.exit(0);
+            }
+        });
         sidebar.add(btnSair);
 
         add(sidebar, BorderLayout.WEST);
 
-        // ===== PAINEIS DE CONTEUDO — 5/5 reais =====
+        // ===== PAINEIS DE CONTEUDO =====
         painelConteudo.add(new CadastroResidentePanel(residenteController, quartoRepository), "residentes");
         painelConteudo.add(new ControleMedicamentoPanel(medicamentoController), "medicamentos");
         painelConteudo.add(new GestaoAtividadePanel(atividadeController), "atividades");

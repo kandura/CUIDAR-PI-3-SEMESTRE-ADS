@@ -158,6 +158,7 @@ public class RegistroClinicoRepositoryImpl implements RegistroClinicoRepository 
     }
 
     private RegistroClinico montarRegistroClinico(ResultSet rs) throws SQLException {
+        // Residente
         Pessoa pRes = new Pessoa();
         pRes.setNomeCompleto(rs.getString("res_nome"));
         pRes.setCpf(rs.getString("res_cpf"));
@@ -176,6 +177,7 @@ public class RegistroClinicoRepositoryImpl implements RegistroClinicoRepository 
         residente.setStatus(rs.getString("res_status"));
         residente.setObsGeral(rs.getString("res_obs"));
 
+        // Funcionario (simplificado)
         Pessoa pFunc = new Pessoa();
         pFunc.setNomeCompleto(rs.getString("func_nome"));
         pFunc.setCpf(rs.getString("func_cpf"));
@@ -184,6 +186,7 @@ public class RegistroClinicoRepositoryImpl implements RegistroClinicoRepository 
         funcionario.setId(rs.getInt("id_funcionario"));
         funcionario.setPessoa(pFunc);
 
+        // Medicamento
         Medicamento medicamento = new Medicamento();
         medicamento.setId(rs.getInt("id_medicamento"));
         medicamento.setNome(rs.getString("med_nome"));
@@ -192,6 +195,7 @@ public class RegistroClinicoRepositoryImpl implements RegistroClinicoRepository 
         medicamento.setQuantidade(rs.getInt("quantidade"));
         medicamento.setDescricao(rs.getString("med_descricao"));
 
+        // Medico (nullable)
         Medico medico = null;
         int idMedico = rs.getInt("id_medico");
         if (!rs.wasNull()) {
@@ -205,6 +209,7 @@ public class RegistroClinicoRepositoryImpl implements RegistroClinicoRepository 
             medico.setEspecialidade(rs.getString("especialidade"));
         }
 
+        // Registro
         RegistroClinico rc = new RegistroClinico();
         rc.setId(rs.getInt("id_registro_clinico"));
         rc.setResidente(residente);

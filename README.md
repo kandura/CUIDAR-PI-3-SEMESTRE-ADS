@@ -1,3 +1,92 @@
+# CUIDAR — Versão 3.6 (PasswordUtil + LoginService com migração + RBAC "Meu Perfil" + Trocar de conta)
+
+Décima quinta versão. **Marco do projeto**: o código-fonte é **byte-idêntico** ao `src/` raiz do repositório — todos os 64 arquivos `.java` batem hash. A partir daqui (v3.7 em diante) começam as features incrementais sobre esta base.
+
+## Mudanças desde a v3.5
+
+### Nova classe: `util/PasswordUtil`
+
+Hash + verificação de senhas com **PBKDF2-HMAC-SHA256**:
+
+- Algoritmo: `PBKDF2WithHmacSHA256`
+- Iterações: **120 000**
+- Salt: 16 bytes (`SecureRandom`)
+- Tamanho da chave derivada: 256 bits
+- Formato armazenado: `PBKDF2$<iter>$<saltBase64>$<hashBase64>`
+- `isHashed(stored)` — detecta o prefixo `PBKDF2$` para separar senha legada de senha já migrada.
+- `verify(plain, stored)` — usa comparação **constant-time** (`byte XOR + OR`) para evitar timing attack.
+
+### `LoginService.autenticar` com migração transparente
+
+```text
+1. Busca por login.
+2. Se a senha armazenada estiver no formato PBKDF2$… → PasswordUtil.verify (rota normal).
+3. Caso contrário (senha legada em texto puro):
+   a. Compara em texto puro.
+   b. Se bater, gera PasswordUtil.hash(senha) e atualiza no banco (FuncionarioRepository.atualizar).
+   c. Retorna o funcionário autenticado.
+4. Senão, retorna null.
+```
+
+Resultado: senhas antigas migram automaticamente no primeiro login bem-sucedido — sem dropar dados, sem força-bruta.
+
+### `MainFrame`: RBAC "Meu Perfil" + fluxo "Trocar de conta"
+
+O construtor ganhou um sétimo parâmetro `Runnable onLogout` e a sidebar passou a:
+
+| Mudança | Antes | Agora |
+|---|---|---|
+| Rótulo do item Administrativo | Sempre "Administrativo" | "Administrativo" para `Cargo == Administrador`; **"Meu Perfil"** para os demais |
+| Botão "Sair" | `System.exit(0)` direto | `JOptionPane` com três escolhas: **Trocar de conta** / **Encerrar sistema** / **Cancelar**. Em "Trocar de conta", o frame é `dispose()` e o `onLogout` re-abre o `LoginFrame`. |
+
+A ordem dos parâmetros do construtor de `MainFrame` foi reorganizada para casar a do `src/` raiz:
+
+```java
+new MainFrame(funcionarioLogado,
+              residenteController, funcionarioController, medicoController,
+              medicamentoController, prontuarioController,
+              registroClinicoController, atividadeController,
+              quartoRepository, cargoRepository, onLogout)
+```
+
+### `CuidarApp` reescrita
+
+- Sem mais modo `--headless` (era um andaime das versões anteriores; não existe no `src/` raiz).
+- Extraído método estático `mostrarLogin(...)` que pode ser re-chamado pelo `onLogout` para reabrir o `LoginFrame`.
+- Thread observadora aguarda o `LoginFrame.isVisible() == false`; ao fechar com `funcionarioLogado != null`, abre o `MainFrame` na EDT.
+
+### Reaplicação literal dos demais arquivos
+
+Para garantir bit-identity, 17 arquivos das camadas inferiores foram re-copiados do `src/` raiz (eram cortes de versões anteriores com diferenças apenas de encoding/Javadoc):
+`Pessoa`, `Residente`, `RegistroClinico`, 8 `Service`s, `FuncionarioRepository`, 2 `repository.impl`s, `AtividadeController`, `CpfUtil`, `InputHelper`.
+
+## Como rodar (sem fallback headless — abre direto a GUI)
+
+```powershell
+$lib = "C:\caminho\para\lib\postgresql-42.7.3.jar"
+$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
+javac -d out -cp $lib $files
+Copy-Item src\main\resources\application.properties out\ -ErrorAction SilentlyContinue
+java -cp "out;$lib" br.com.cuidar.CuidarApp
+```
+
+Para validação offline desta versão, foi usado um *smoke-test* (`SmokeTestV15`) externo à v15 que apenas instancia `PasswordUtil` (roundtrip `hash`/`verify`, `isHashed`) e exercita `LoginService.autenticar` contra o banco real, confirmando que:
+- senha errada → `null`
+- formato salvo é `PBKDF2$120000$<salt>$<hash>`
+- `verify` constant-time bate em hash gerado dinamicamente
+
+## A partir daqui — features incrementais (v3.7 → v3.11)
+
+| Versão | Etapa | Tema |
+|---|---|---|
+| v3.7 | 16 | Validações UX extras (CPF único reforçado, identificadores imutáveis em edit) |
+| v3.8 | 17 | `MeuPerfilPanel` + `LoginService.trocarSenha` |
+| v3.9 | 18 | RBAC: campo `quantidade` (estoque) só editável por Administrador |
+| v3.10 | 19 | Tabela `atividade_residente` + `DashboardEnfermeiroPanel` (agenda do dia) |
+| v3.11 | 20 | Tabela `prescricao_medicamento` + marcar tomada (transação) + ver responsáveis + abas no Dashboard |
+
+---
+
 # CUIDAR — Versão 3.5 (Medicamento + Atividade + Prontuário panels — 5/5 telas)
 
 Décima quarta versão. Acrescentou os **três painéis finais** ao `MainFrame`, fechando as cinco telas da sidebar: Residentes, Medicamentos, Atividades, Prontuário e Administrativo. Não há mais placeholders "em construção".
@@ -46,19 +135,6 @@ Monta os **12 repositórios**, **9 serviços** e **7 controladores** completos, 
 - **`LoginService` com migração automática** de senha legada → PBKDF2 no primeiro login bem-sucedido.
 - **RBAC dinâmico na sidebar**: itens visíveis variam por cargo do `funcionarioLogado`; aba "Administrativo" vira "Meu Perfil" para não-administradores (essa parte do `ControleAdministrativoPanel` já está pronta desde a v3.4, mas a sidebar ainda não esconde itens).
 - **Trocar de conta**: botão "Sair" abre `JOptionPane` com 3 escolhas ("Trocar de conta / Encerrar sistema / Cancelar") — quando trocar, volta ao `LoginFrame` sem matar o processo.
-
-## Como rodar
-
-```powershell
-$lib = "C:\caminho\para\lib\postgresql-42.7.3.jar"
-$files = (Get-ChildItem -Recurse src\main\java -Filter "*.java").FullName
-javac -d out -cp $lib $files
-Copy-Item src\main\resources\application.properties out\ -ErrorAction SilentlyContinue
-# GUI (desktop):
-java -cp "out;$lib" br.com.cuidar.CuidarApp
-# Smoke-test sem display:
-java -cp "out;$lib" br.com.cuidar.CuidarApp --headless
-```
 
 ---
 
@@ -383,4 +459,3 @@ Cargo{id=1, nomeCargo='Administrador'}
 Funcionario{id=1, pessoa=Pessoa{...}, cargo=Cargo{...}, login='maria.silva'}
 Dr. João Souza
 ```
-s

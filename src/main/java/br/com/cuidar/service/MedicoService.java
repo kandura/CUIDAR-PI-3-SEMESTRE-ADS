@@ -19,6 +19,12 @@ public class MedicoService {
         this.pessoaRepository = pessoaRepository;
     }
 
+    /**
+     * Cadastra um novo médico no sistema.
+     * Primeiro salva a Pessoa, depois o Medico vinculado.
+     *
+     * @param medico - médico a ser cadastrado
+     */
     public void cadastrarMedico(Medico medico) {
         Pessoa pessoa = medico.getPessoa();
         Pessoa existente = pessoaRepository.buscarPorCpf(pessoa.getCpf());
@@ -29,15 +35,31 @@ public class MedicoService {
         medicoRepository.salvar(medico);
     }
 
+    /**
+     * Edita os dados de um médico existente.
+     *
+     * @param medico - médico com os dados atualizados
+     */
     public void editarMedico(Medico medico) {
         pessoaRepository.atualizar(medico.getPessoa());
         medicoRepository.atualizar(medico);
     }
 
+    /**
+     * Busca um médico pelo CRM.
+     *
+     * @param crm - CRM do médico
+     * @return o médico encontrado ou null
+     */
     public Medico buscarPorCrm(String crm) {
         return medicoRepository.buscarPorCrm(crm);
     }
 
+    /**
+     * Lista todos os médicos cadastrados.
+     *
+     * @return lista de médicos
+     */
     public List<Medico> listarTodos() {
         return medicoRepository.listarTodos();
     }

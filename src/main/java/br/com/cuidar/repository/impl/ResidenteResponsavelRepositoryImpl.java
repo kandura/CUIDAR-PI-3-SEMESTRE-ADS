@@ -63,7 +63,6 @@ public class ResidenteResponsavelRepositoryImpl implements ResidenteResponsavelR
     @Override
     public List<ResidenteResponsavel> listarPorResidente(Residente residente) {
         String sql = "SELECT rr.*, "
-                + "pr.id_pessoa AS resp_id_pessoa, "
                 + "pr.nome_completo AS resp_nome, pr.cpf AS resp_cpf, pr.sexo AS resp_sexo, "
                 + "pr.data_nascimento AS resp_nasc, pr.data_cadastro AS resp_cadastro, "
                 + "resp.telefone AS resp_telefone, resp.email AS resp_email, "
@@ -82,7 +81,7 @@ public class ResidenteResponsavelRepositoryImpl implements ResidenteResponsavelR
             ResultSet rs = st.executeQuery();
             while (rs.next()) {
                 Pessoa pResp = new Pessoa();
-                pResp.setId(rs.getInt("resp_id_pessoa"));
+                pResp.setId(rs.getInt("id_pessoa"));
                 pResp.setNomeCompleto(rs.getString("resp_nome"));
                 pResp.setCpf(rs.getString("resp_cpf"));
                 pResp.setSexo(rs.getString("resp_sexo"));
@@ -124,7 +123,6 @@ public class ResidenteResponsavelRepositoryImpl implements ResidenteResponsavelR
     @Override
     public List<ResidenteResponsavel> listarPorResponsavel(Responsavel responsavel) {
         String sql = "SELECT rr.*, "
-                + "pres.id_pessoa AS res_id_pessoa, "
                 + "pres.nome_completo AS res_nome, pres.cpf AS res_cpf, pres.sexo AS res_sexo, "
                 + "pres.data_nascimento AS res_nasc, pres.data_cadastro AS res_cadastro, "
                 + "r.status AS res_status, r.obs_geral AS res_obs, "
@@ -143,7 +141,7 @@ public class ResidenteResponsavelRepositoryImpl implements ResidenteResponsavelR
             ResultSet rs = st.executeQuery();
             while (rs.next()) {
                 Pessoa pRes = new Pessoa();
-                pRes.setId(rs.getInt("res_id_pessoa"));
+                pRes.setId(rs.getInt("id_pessoa"));
                 pRes.setNomeCompleto(rs.getString("res_nome"));
                 pRes.setCpf(rs.getString("res_cpf"));
                 pRes.setSexo(rs.getString("res_sexo"));

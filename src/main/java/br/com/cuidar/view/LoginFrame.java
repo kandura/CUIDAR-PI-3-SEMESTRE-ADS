@@ -9,7 +9,7 @@ import java.awt.*;
 /**
  * Tela de login do sistema CUIDAR.
  * Autentica o funcionário por login e senha utilizando o {@link LoginService}.
- * Após autenticação bem-sucedida, armazena o {@link Funcionario} logado e libera o frame.
+ * Após autenticação bem-sucedida, armazena o {@link Funcionario} logado.
  */
 public class LoginFrame extends JFrame {
 

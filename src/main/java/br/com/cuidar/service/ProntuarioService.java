@@ -15,14 +15,30 @@ public class ProntuarioService {
         this.prontuarioRepository = prontuarioRepository;
     }
 
+    /**
+     * Cria um novo prontuário vinculado ao residente.
+     *
+     * @param prontuario - prontuário a ser criado
+     */
     public void criarProntuario(Prontuario prontuario) {
         prontuarioRepository.salvar(prontuario);
     }
 
+    /**
+     * Atualiza as informações do prontuário.
+     *
+     * @param prontuario - prontuário com os dados atualizados
+     */
     public void atualizarProntuario(Prontuario prontuario) {
         prontuarioRepository.atualizar(prontuario);
     }
 
+    /**
+     * Busca o prontuário de um residente específico.
+     *
+     * @param residente - residente associado ao prontuário
+     * @return - o prontuário do residente
+     */
     public Prontuario buscarPorResidente(Residente residente) {
         return prontuarioRepository.buscarPorResidente(residente);
     }

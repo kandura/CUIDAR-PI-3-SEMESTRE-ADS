@@ -236,3 +236,4 @@ CREATE TABLE atividade (
     hora_inicio TIME NOT NULL,
     hora_termino TIME NOT NULL
 );
+

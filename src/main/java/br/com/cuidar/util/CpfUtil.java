@@ -17,12 +17,15 @@ public final class CpfUtil {
     public static boolean isValid(String cpf) {
         if (cpf == null) return false;
 
+        // Remove caracteres não numéricos
         cpf = cpf.replaceAll("[^0-9]", "");
 
         if (cpf.length() != 11) return false;
 
+        // Rejeita CPFs com todos os dígitos iguais (ex: 111.111.111-11)
         if (cpf.chars().distinct().count() == 1) return false;
 
+        // Cálculo do primeiro dígito verificador
         int soma = 0;
         for (int i = 0; i < 9; i++) {
             soma += (cpf.charAt(i) - '0') * (10 - i);
@@ -32,6 +35,7 @@ public final class CpfUtil {
 
         if ((cpf.charAt(9) - '0') != digito1) return false;
 
+        // Cálculo do segundo dígito verificador
         soma = 0;
         for (int i = 0; i < 10; i++) {
             soma += (cpf.charAt(i) - '0') * (11 - i);

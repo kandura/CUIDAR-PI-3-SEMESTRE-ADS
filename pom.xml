@@ -7,11 +7,11 @@
 
     <groupId>br.com.cuidar</groupId>
     <artifactId>cuidar</artifactId>
-    <version>3.5-SNAPSHOT</version>
+    <version>3.6-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>CUIDAR</name>
-    <description>Sistema de Cuidado Integrado para Residências de Idosos — Versão 3.5 (ControleMedicamentoPanel + GestaoAtividadePanel + ProntuarioPanel — 5/5 telas)</description>
+    <description>Sistema de Cuidado Integrado para Residências de Idosos — Versão 3.6 (PBKDF2 + LoginService com migração de senha legada + RBAC "Meu Perfil" + Trocar de conta — IDÊNTICA ao src/ raiz)</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

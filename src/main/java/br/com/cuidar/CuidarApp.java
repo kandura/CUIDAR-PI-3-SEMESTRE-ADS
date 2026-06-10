@@ -9,123 +9,112 @@ import br.com.cuidar.view.LoginFrame;
 import br.com.cuidar.view.MainFrame;
 
 import javax.swing.*;
-import java.awt.GraphicsEnvironment;
 
 /**
  * Classe principal do sistema CUIDAR.
- * Versão 3.5 — Todas as 5 abas têm painel real: {@code CadastroResidentePanel},
- * {@code ControleMedicamentoPanel}, {@code GestaoAtividadePanel},
- * {@code ProntuarioPanel} e {@code ControleAdministrativoPanel}. Não há mais
- * placeholders. A v3.6 adicionará RBAC dinâmico na sidebar (alguns itens
- * sumirem por cargo), o fluxo de "Trocar de conta" e o PBKDF2 + migração de
- * senhas legadas no {@code LoginService}.
- *
- * <p>Sem argumentos: tenta abrir a GUI. Em ambiente sem display gráfico,
- * faz fallback para um smoke-test "headless" que exercita os 7 controllers
- * usados pelos painéis novos.</p>
+ * Ponto de entrada da aplicação desktop.
  */
 public class CuidarApp {
 
     public static void main(String[] args) {
-        boolean forceHeadless = args.length > 0 && "--headless".equalsIgnoreCase(args[0]);
-        boolean headless = forceHeadless || GraphicsEnvironment.isHeadless();
-
         System.out.println("=== Sistema CUIDAR ===");
-        System.out.println("Versão 3.5 — Medicamento + Atividade + Prontuário panels (5/5 telas)");
+        System.out.println("Inicializando...");
 
-        // Repositórios
+        // Repositories
         PessoaRepository pessoaRepo = new PessoaRepositoryImpl();
-        CargoRepository cargoRepo = new CargoRepositoryImpl();
         QuartoRepository quartoRepo = new QuartoRepositoryImpl();
-        FuncionarioRepository funcRepo = new FuncionarioRepositoryImpl();
+        CargoRepository cargoRepo = new CargoRepositoryImpl();
+        ResidenteRepository residenteRepo = new ResidenteRepositoryImpl();
+        FuncionarioRepository funcionarioRepo = new FuncionarioRepositoryImpl();
+        ResponsavelRepository responsavelRepo = new ResponsavelRepositoryImpl();
         MedicoRepository medicoRepo = new MedicoRepositoryImpl();
-        ResidenteRepository resRepo = new ResidenteRepositoryImpl();
-        ResponsavelRepository respRepo = new ResponsavelRepositoryImpl();
-        ResidenteResponsavelRepository rrRepo = new ResidenteResponsavelRepositoryImpl();
-        ProntuarioRepository pronRepo = new ProntuarioRepositoryImpl();
-        MedicamentoRepository medRepo = new MedicamentoRepositoryImpl();
-        RegistroClinicoRepository rcRepo = new RegistroClinicoRepositoryImpl();
-        AtividadeRepository atvRepo = new AtividadeRepositoryImpl();
+        ResidenteResponsavelRepository resResponsavelRepo = new ResidenteResponsavelRepositoryImpl();
+        ProntuarioRepository prontuarioRepo = new ProntuarioRepositoryImpl();
+        MedicamentoRepository medicamentoRepo = new MedicamentoRepositoryImpl();
+        RegistroClinicoRepository registroClinicoRepo = new RegistroClinicoRepositoryImpl();
+        AtividadeRepository atividadeRepo = new AtividadeRepositoryImpl();
 
         // Services
-        LoginService loginService = new LoginService(funcRepo);
-        ResidenteService residenteService = new ResidenteService(resRepo, pessoaRepo);
-        FuncionarioService funcionarioService = new FuncionarioService(funcRepo, pessoaRepo);
+        LoginService loginService = new LoginService(funcionarioRepo);
+        ResidenteService residenteService = new ResidenteService(residenteRepo, pessoaRepo);
+        FuncionarioService funcionarioService = new FuncionarioService(funcionarioRepo, pessoaRepo);
         MedicoService medicoService = new MedicoService(medicoRepo, pessoaRepo);
-        ResponsavelService responsavelService = new ResponsavelService(respRepo, rrRepo, pessoaRepo);
-        ProntuarioService prontuarioService = new ProntuarioService(pronRepo);
-        MedicamentoService medicamentoService = new MedicamentoService(medRepo);
-        RegistroClinicoService registroClinicoService = new RegistroClinicoService(rcRepo);
-        AtividadeService atividadeService = new AtividadeService(atvRepo);
+        MedicamentoService medicamentoService = new MedicamentoService(medicamentoRepo);
+        ProntuarioService prontuarioService = new ProntuarioService(prontuarioRepo);
+        RegistroClinicoService registroClinicoService = new RegistroClinicoService(registroClinicoRepo);
+        ResponsavelService responsavelService = new ResponsavelService(responsavelRepo, resResponsavelRepo, pessoaRepo);
+        AtividadeService atividadeService = new AtividadeService(atividadeRepo);
 
         // Controllers
         ResidenteController residenteController = new ResidenteController(residenteService, responsavelService);
         FuncionarioController funcionarioController = new FuncionarioController(funcionarioService);
         MedicoController medicoController = new MedicoController(medicoService);
         MedicamentoController medicamentoController = new MedicamentoController(medicamentoService);
-        AtividadeController atividadeController = new AtividadeController(atividadeService);
         ProntuarioController prontuarioController = new ProntuarioController(prontuarioService);
         RegistroClinicoController registroClinicoController = new RegistroClinicoController(registroClinicoService);
+        AtividadeController atividadeController = new AtividadeController(atividadeService);
 
-        if (headless) {
-            System.out.println("[modo headless] sem display — exercitando controllers das 5 telas.\n");
-            try {
-                System.out.println("[ResidenteController]      listarTodos -> "
-                        + residenteController.listarTodos().size());
-                System.out.println("[FuncionarioController]    listarTodos -> "
-                        + funcionarioController.listarTodos().size());
-                System.out.println("[MedicoController]         listarTodos -> "
-                        + medicoController.listarTodos().size());
-                System.out.println("[MedicamentoController]    listarTodos -> "
-                        + medicamentoController.listarTodos().size());
-                System.out.println("[AtividadeController]      listarTodos -> "
-                        + atividadeController.listarTodos().size());
-                System.out.println("[QuartoRepository]         listarTodos -> "
-                        + quartoRepo.listarTodos().size());
-                System.out.println("[CargoRepository]          listarTodos -> "
-                        + cargoRepo.listarTodos().size());
-
-                // Prontuário + registros clínicos: usa um residente cadastrado
-                var residentes = residenteController.listarTodos();
-                if (!residentes.isEmpty()) {
-                    var r0 = residentes.get(0);
-                    var p = prontuarioController.buscarPorResidente(r0);
-                    System.out.println("\n[ProntuarioController] residente '"
-                            + r0.getPessoa().getNomeCompleto() + "' -> "
-                            + (p != null ? "prontuário OK (peso=" + p.getPeso() + ", altura=" + p.getAltura() + ")"
-                                          : "sem prontuário"));
-                    System.out.println("[RegistroClinicoController] registros do mesmo residente -> "
-                            + registroClinicoController.listarPorResidente(r0).size());
-                }
-                System.out.println("\n[modo headless] OK.");
-            } catch (RuntimeException e) {
-                System.err.println("Falha headless: " + e.getMessage());
-            }
-            return;
-        }
-
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {
-        }
-
+        // Swing UI
         SwingUtilities.invokeLater(() -> {
-            LoginFrame login = new LoginFrame(loginService);
-            login.setVisible(true);
-            login.addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override
-                public void windowClosed(java.awt.event.WindowEvent e) {
-                    Funcionario f = login.getFuncionarioLogado();
-                    if (f != null) {
-                        new MainFrame(f, residenteController, funcionarioController,
-                                medicoController, medicamentoController, atividadeController,
-                                prontuarioController, registroClinicoController,
-                                quartoRepo, cargoRepo).setVisible(true);
-                    } else {
-                        System.exit(0);
-                    }
-                }
-            });
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                // fallback para look and feel padrão
+            }
+
+            mostrarLogin(loginService, residenteController, funcionarioController, medicoController,
+                    medicamentoController, prontuarioController, registroClinicoController,
+                    atividadeController, quartoRepo, cargoRepo);
         });
+    }
+
+    private static void mostrarLogin(LoginService loginService,
+                                     ResidenteController residenteController,
+                                     FuncionarioController funcionarioController,
+                                     MedicoController medicoController,
+                                     MedicamentoController medicamentoController,
+                                     ProntuarioController prontuarioController,
+                                     RegistroClinicoController registroClinicoController,
+                                     AtividadeController atividadeController,
+                                     QuartoRepository quartoRepo,
+                                     CargoRepository cargoRepo) {
+        LoginFrame loginFrame = new LoginFrame(loginService);
+        loginFrame.setVisible(true);
+
+        new Thread(() -> {
+            while (loginFrame.isVisible()) {
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            Funcionario funcionarioLogado = loginFrame.getFuncionarioLogado();
+            if (funcionarioLogado != null) {
+                SwingUtilities.invokeLater(() -> {
+                    Runnable onLogout = () -> mostrarLogin(loginService, residenteController,
+                            funcionarioController, medicoController, medicamentoController,
+                            prontuarioController, registroClinicoController, atividadeController,
+                            quartoRepo, cargoRepo);
+                    MainFrame mainFrame = new MainFrame(
+                            funcionarioLogado,
+                            residenteController,
+                            funcionarioController,
+                            medicoController,
+                            medicamentoController,
+                            prontuarioController,
+                            registroClinicoController,
+                            atividadeController,
+                            quartoRepo,
+                            cargoRepo,
+                            onLogout
+                    );
+                    mainFrame.setVisible(true);
+                });
+            } else {
+                System.exit(0);
+            }
+        }).start();
     }
 }
